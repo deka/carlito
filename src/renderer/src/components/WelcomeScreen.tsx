@@ -1,4 +1,3 @@
-import { useMemo } from 'react';
 import { runCommand } from '../commands/registry';
 
 const shortcuts = [
@@ -54,9 +53,9 @@ const quotes = [
   { text: 'The obstacle is the way.', author: 'Marcus Aurelius' },
 ];
 
-export function WelcomeScreen() {
-  const quote = useMemo(() => quotes[Math.floor(Math.random() * quotes.length)]!, []);
+const quote = quotes[Math.floor(Math.random() * quotes.length)]!;
 
+export function WelcomeScreen() {
   return (
     <div className="welcome-screen">
       <div className="welcome-aurora welcome-aurora-one" aria-hidden="true" />
