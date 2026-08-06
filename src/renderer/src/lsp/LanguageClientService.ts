@@ -1,6 +1,6 @@
 import * as monaco from '@codingame/monaco-vscode-editor-api';
 import { MonacoLanguageClient } from 'monaco-languageclient';
-import { CloseAction, ErrorAction } from 'vscode-languageclient/browser.js';
+import { CloseAction, ErrorAction } from 'vscode-languageclient/browser';
 import type { LanguageId, ServerLanguageId } from '@shared/language-registry';
 import type { LspStatus as LspClientStatus } from '@shared/lsp-types';
 import { serverLanguage } from './documentSelectors';
