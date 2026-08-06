@@ -13,12 +13,7 @@ export function AppTitleBar() {
 
   return (
     <header className="app-titlebar">
-      <div className="app-titlebar-brand">
-        <span className="brand-mark" aria-hidden="true">
-          <span />
-        </span>
-        <span>Carlo</span>
-      </div>
+      <div aria-hidden="true" />
       <button
         className="app-command-center"
         type="button"
