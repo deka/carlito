@@ -47,6 +47,7 @@ interface EditorState {
   closeTabInGroup: (id: string, groupId: string) => EditorTab | undefined;
   setActive: (id: string, groupId?: string) => void;
   setActiveGroup: (id: string) => void;
+  moveTabToGroup: (tabId: string, sourceGroupId: string, targetGroupId: string, targetIndex: number) => void;
   splitActive: (direction: 'vertical' | 'horizontal') => void;
   closeGroup: (id: string) => void;
   markDirty: (uri: string) => void;
@@ -210,6 +211,48 @@ export const useEditorStore = create<EditorState>((set, get) => ({
     }),
   setActiveGroup: (id) =>
     set((state) => ({ activeGroupId: id, activeTabId: currentActiveTabId(state.groups, id) })),
+  moveTabToGroup: (tabId, sourceGroupId, targetGroupId, targetIndex) =>
+    set((state) => {
+      const source = state.groups.find((group) => group.id === sourceGroupId);
+      const target = state.groups.find((group) => group.id === targetGroupId);
+      const sourceIndex = source?.tabIds.indexOf(tabId) ?? -1;
+      if (!source || !target || sourceIndex < 0) return {};
+
+      if (sourceGroupId === targetGroupId) {
+        const tabIds = source.tabIds.filter((id) => id !== tabId);
+        const adjustedIndex = sourceIndex < targetIndex ? targetIndex - 1 : targetIndex;
+        const insertAt = Math.max(0, Math.min(adjustedIndex, tabIds.length));
+        tabIds.splice(insertAt, 0, tabId);
+        const groups = state.groups.map((group) =>
+          group.id === sourceGroupId ? { ...group, tabIds, activeTabId: tabId } : group,
+        );
+        return { groups, activeGroupId: targetGroupId, activeTabId: tabId };
+      }
+
+      const sourceTabIds = source.tabIds.filter((id) => id !== tabId);
+      const existingTargetIndex = target.tabIds.indexOf(tabId);
+      const targetTabIds = target.tabIds.filter((id) => id !== tabId);
+      const adjustedTargetIndex = existingTargetIndex >= 0 && existingTargetIndex < targetIndex
+        ? targetIndex - 1
+        : targetIndex;
+      const insertAt = Math.max(0, Math.min(adjustedTargetIndex, targetTabIds.length));
+      targetTabIds.splice(insertAt, 0, tabId);
+
+      let groups = state.groups.map((group) => {
+        if (group.id === sourceGroupId) {
+          const activeTabId = group.activeTabId === tabId
+            ? (sourceTabIds[Math.min(sourceIndex, sourceTabIds.length - 1)] ?? null)
+            : group.activeTabId;
+          return { ...group, tabIds: sourceTabIds, activeTabId };
+        }
+        if (group.id === targetGroupId) return { ...group, tabIds: targetTabIds, activeTabId: tabId };
+        return group;
+      });
+      if (groups.length > 1 && sourceTabIds.length === 0) {
+        groups = groups.filter((group) => group.id !== sourceGroupId);
+      }
+      return { groups, activeGroupId: targetGroupId, activeTabId: tabId };
+    }),
   splitActive: (direction) =>
     set((state) => {
       const source = state.groups.find((group) => group.id === state.activeGroupId);

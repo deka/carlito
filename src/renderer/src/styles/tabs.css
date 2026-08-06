@@ -48,6 +48,7 @@
   min-width: 24px;
 }
 .group-close,
+.group-split,
 .nav-button {
   -webkit-app-region: no-drag;
   display: grid;
@@ -63,17 +64,21 @@
   cursor: pointer;
   transition: background 120ms ease, color 120ms ease;
 }
-.group-close { margin-left: 4px; }
+.group-close { margin-left: 2px; }
+.group-split { margin-left: 4px; }
 .group-close:hover,
+.group-split:hover,
 .nav-button:hover:not(:disabled) { background: var(--hover); color: var(--fg); }
 .nav-button:disabled { cursor: default; opacity: 0.34; }
 .group-close svg,
+.group-split svg,
 .nav-button svg {
   width: 15px;
   height: 15px;
   fill: none;
   stroke: currentColor;
   stroke-linecap: round;
+  stroke-linejoin: round;
   stroke-width: 1.5;
 }
 
@@ -96,6 +101,29 @@
 .tab:hover {
   background: color-mix(in srgb, var(--surface) 46%, transparent);
   color: var(--muted-strong);
+}
+.tab.dragging {
+  opacity: 0.35;
+}
+.tab.drop-before::before,
+.tab.drop-after::before {
+  content: '';
+  position: absolute;
+  z-index: 4;
+  top: 4px;
+  bottom: 4px;
+  width: 2px;
+  border-radius: 99px;
+  background: var(--accent);
+  box-shadow: 0 0 8px color-mix(in srgb, var(--accent) 76%, transparent);
+}
+.tab.drop-before::before { left: 0; }
+.tab.drop-after::before { right: 0; }
+.tab-strip.drop-empty {
+  min-width: 72px;
+  border: 1px dashed color-mix(in srgb, var(--accent) 60%, transparent);
+  border-radius: 7px;
+  background: var(--accent-soft);
 }
 .tab.active {
   border-color: var(--border-subtle);

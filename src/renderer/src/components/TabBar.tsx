@@ -1,4 +1,4 @@
-import { type MouseEvent, useState } from 'react';
+import { type DragEvent, type MouseEvent, useState } from 'react';
 import { disposeModel } from '../editor/models';
 import type { EditorTab } from '../store/useEditorStore';
 import { isUriOpen, useEditorStore } from '../store/useEditorStore';
@@ -7,13 +7,51 @@ import { Tab } from './Tab';
 import { TabContextMenu } from './TabContextMenu';
 import type { TabContextMenuState } from './TabContextMenuState';
 
+const tabDragDataType = 'application/x-carlo-tab';
+
+interface TabDragData {
+  tabId: string;
+  sourceGroupId: string;
+}
+
+interface DropTarget {
+  tabId?: string;
+  position: 'before' | 'after';
+}
+
 interface Props {
   groupId: string;
 }
 
+function isTabDrag(event: DragEvent): boolean {
+  return event.dataTransfer.types.includes(tabDragDataType);
+}
+
+function readTabDragData(event: DragEvent): TabDragData | undefined {
+  try {
+    const parsed = JSON.parse(event.dataTransfer.getData(tabDragDataType)) as Partial<TabDragData>;
+    if (typeof parsed.tabId !== 'string' || typeof parsed.sourceGroupId !== 'string') return undefined;
+    return { tabId: parsed.tabId, sourceGroupId: parsed.sourceGroupId };
+  } catch {
+    return undefined;
+  }
+}
+
 export function TabBar({ groupId }: Props) {
-  const { tabs, groups, activeGroupId, setActive, closeGroup, workspace } = useEditorStore();
+  const {
+    tabs,
+    groups,
+    activeGroupId,
+    setActive,
+    setActiveGroup,
+    moveTabToGroup,
+    splitActive,
+    closeGroup,
+    workspace,
+  } = useEditorStore();
   const [contextMenu, setContextMenu] = useState<TabContextMenuState | undefined>(undefined);
+  const [draggingTabId, setDraggingTabId] = useState<string | undefined>(undefined);
+  const [dropTarget, setDropTarget] = useState<DropTarget | undefined>(undefined);
   const group = groups.find((candidate) => candidate.id === groupId);
   const groupTabs = group
     ? group.tabIds.flatMap((id) => tabs.find((tab) => tab.id === id) ?? [])
@@ -55,8 +93,56 @@ export function TabBar({ groupId }: Props) {
     void Promise.resolve(action()).catch(console.error);
   }
 
+  function startTabDrag(event: DragEvent<HTMLButtonElement>, tab: EditorTab): void {
+    const data: TabDragData = { tabId: tab.id, sourceGroupId: groupId };
+    event.dataTransfer.effectAllowed = 'move';
+    event.dataTransfer.setData(tabDragDataType, JSON.stringify(data));
+    setDraggingTabId(tab.id);
+    setContextMenu(undefined);
+  }
+
+  function showTabDropTarget(event: DragEvent<HTMLDivElement>, tabId: string): void {
+    if (!isTabDrag(event)) return;
+    event.preventDefault();
+    event.stopPropagation();
+    event.dataTransfer.dropEffect = 'move';
+    const bounds = event.currentTarget.getBoundingClientRect();
+    const position = event.clientX < bounds.left + bounds.width / 2 ? 'before' : 'after';
+    setDropTarget({ tabId, position });
+  }
+
+  function dropTab(event: DragEvent, insertionIndex: number): void {
+    if (!isTabDrag(event)) return;
+    event.preventDefault();
+    event.stopPropagation();
+    const data = readTabDragData(event);
+    setDropTarget(undefined);
+    if (!data) return;
+    moveTabToGroup(data.tabId, data.sourceGroupId, groupId, insertionIndex);
+  }
+
+  function dropOnTab(event: DragEvent<HTMLDivElement>, index: number): void {
+    const bounds = event.currentTarget.getBoundingClientRect();
+    const insertionIndex = event.clientX < bounds.left + bounds.width / 2 ? index : index + 1;
+    dropTab(event, insertionIndex);
+  }
+
+  function showEndDropTarget(event: DragEvent<HTMLDivElement>): void {
+    if (!isTabDrag(event)) return;
+    if ((event.target as HTMLElement).closest('.tab')) return;
+    event.preventDefault();
+    event.dataTransfer.dropEffect = 'move';
+    const lastTab = groupTabs.at(-1);
+    setDropTarget({ tabId: lastTab?.id, position: 'after' });
+  }
+
   return (
-    <div className={`tab-bar ${groupId === activeGroupId ? 'active-group' : ''}`}>
+    <div
+      className={`tab-bar ${groupId === activeGroupId ? 'active-group' : ''}`}
+      onDragLeave={(event) => {
+        if (!event.currentTarget.contains(event.relatedTarget as Node | null)) setDropTarget(undefined);
+      }}
+    >
       <div className="tab-navigation">
         <button
           className="nav-button"
@@ -74,7 +160,9 @@ export function TabBar({ groupId }: Props) {
         </button>
       </div>
       <div
-        className="tab-strip"
+        className={`tab-strip ${dropTarget && groupTabs.length === 0 ? 'drop-empty' : ''}`}
+        onDragOver={showEndDropTarget}
+        onDrop={(event) => dropTab(event, groupTabs.length)}
         onWheel={(event) => {
           const tabStrip = event.currentTarget;
           if (tabStrip.scrollWidth <= tabStrip.clientWidth) return;
@@ -83,11 +171,13 @@ export function TabBar({ groupId }: Props) {
           event.preventDefault();
         }}
       >
-        {groupTabs.map((tab) => (
+        {groupTabs.map((tab, index) => (
           <Tab
             key={tab.id}
             tab={tab}
             active={tab.id === group?.activeTabId}
+            dragging={tab.id === draggingTabId}
+            dropPosition={dropTarget?.tabId === tab.id ? dropTarget.position : undefined}
             onSelect={() => setActive(tab.id, groupId)}
             onClose={() => {
               void import('../editor/saveActions')
@@ -95,10 +185,39 @@ export function TabBar({ groupId }: Props) {
                 .catch(console.error);
             }}
             onContextMenu={(event) => openContextMenu(event, tab)}
+            onDragStart={(event) => startTabDrag(event, tab)}
+            onDragEnd={() => {
+              setDraggingTabId(undefined);
+              setDropTarget(undefined);
+            }}
+            onDragOver={(event) => showTabDropTarget(event, tab.id)}
+            onDrop={(event) => dropOnTab(event, index)}
           />
         ))}
       </div>
-      <div className="tab-bar-spacer" aria-hidden="true" />
+      <div
+        className="tab-bar-spacer"
+        aria-hidden="true"
+        onDragOver={showEndDropTarget}
+        onDrop={(event) => dropTab(event, groupTabs.length)}
+      />
+      {group?.activeTabId ? (
+        <button
+          className="group-split"
+          type="button"
+          title="Split Editor Right (Ctrl+Alt+Right)"
+          aria-label="Split Editor Right"
+          onClick={() => {
+            setActiveGroup(groupId);
+            splitActive('vertical');
+          }}
+        >
+          <svg viewBox="0 0 16 16" aria-hidden="true">
+            <rect x="2.5" y="2.5" width="11" height="11" rx="1.5" />
+            <path d="M8 3v10" />
+          </svg>
+        </button>
+      ) : null}
       {groups.length > 1 ? (
         <button className="group-close" title="Close split" onClick={() => closeGroup(groupId)}>
           <svg viewBox="0 0 16 16" aria-hidden="true"><path d="m5 5 6 6M11 5l-6 6" /></svg>

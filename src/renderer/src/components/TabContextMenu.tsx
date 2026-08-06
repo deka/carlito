@@ -62,7 +62,15 @@ export function TabContextMenu({
         disabled={tabsToRight.length === 0}
         onClick={() => onRunAction(() => onCloseTabsWithPrompt(tabsToRight))}
       >
-        Close Tabs to the Right
+        Close to the Right
+      </button>
+      <div className="tab-context-separator" />
+      <button
+        type="button"
+        disabled={groupTabs.length === 0}
+        onClick={() => onRunAction(() => onCloseTabsWithPrompt(groupTabs))}
+      >
+        Close All
       </button>
       <button
         type="button"
@@ -70,6 +78,13 @@ export function TabContextMenu({
         onClick={() => onRunAction(() => onCloseSavedTabs(savedTabs))}
       >
         Close Saved
+      </button>
+      <div className="tab-context-separator" />
+      <button type="button" onClick={() => onRunAction(() => runCommand('workbench.action.splitEditorRight'))}>
+        Split Right
+      </button>
+      <button type="button" onClick={() => onRunAction(() => runCommand('workbench.action.splitEditorDown'))}>
+        Split Down
       </button>
       <div className="tab-context-separator" />
       <button
