@@ -18,6 +18,7 @@ interface ClientEntry {
 }
 
 const clients = new Map<string, ClientEntry>();
+const clientStarts = new Map<string, Promise<void>>();
 const listeners = new Set<() => void>();
 let statusVersion = 0;
 
@@ -119,9 +120,25 @@ export async function ensureLanguageClient(
   const lang = serverLanguage(languageId);
   if (!lang) return;
   const key = clientKey(lang, rootUri);
-  const existing = clients.get(key);
-  if (existing && (existing.status === 'running' || existing.status === 'starting')) return;
+  const pending = clientStarts.get(key);
+  if (pending) return pending;
+  if (clients.get(key)?.status === 'running') return;
 
+  const start = startLanguageClient(lang, rootUri, documentUri, key);
+  clientStarts.set(key, start);
+  try {
+    await start;
+  } finally {
+    if (clientStarts.get(key) === start) clientStarts.delete(key);
+  }
+}
+
+async function startLanguageClient(
+  lang: ServerLanguageId,
+  rootUri: string,
+  documentUri: string,
+  key: string,
+): Promise<void> {
   await stopEntries((entry) => entry.languageId === lang && entry.rootUri !== rootUri);
 
   const starting: ClientEntry = {
@@ -197,7 +214,9 @@ export async function restartLanguageClient(
 ): Promise<void> {
   const lang = serverLanguage(languageId);
   if (!lang) return;
-  const existing = clients.get(clientKey(lang, rootUri));
+  const key = clientKey(lang, rootUri);
+  await clientStarts.get(key)?.catch(() => undefined);
+  const existing = clients.get(key);
   if (existing) await stopEntry(existing);
   await ensureLanguageClient(languageId, rootUri, documentUri);
 }

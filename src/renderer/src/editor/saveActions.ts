@@ -1,18 +1,75 @@
+import type { CodeAction, Command } from 'vscode';
 import type { EditorTab } from '../store/useEditorStore';
 import { useSettingsStore } from '../store/useSettingsStore';
 import { activeTab, isUriOpen, useEditorStore } from '../store/useEditorStore';
 import { disposeModel, getModel, replaceModelUri } from './models';
 import { invalidateGitBaseline } from './gitGutter';
 
-async function formatActiveTabForSave(tab: EditorTab): Promise<void> {
-  const currentTab = activeTab();
-  if (currentTab?.id !== tab.id) return;
+async function organizeImports(tab: EditorTab): Promise<void> {
+  const model = getModel(tab.uri);
+  if (!model) return;
+
+  const vscode = await import('vscode');
+  const lastLine = model.getLineCount();
+  const range = new vscode.Range(
+    0,
+    0,
+    lastLine - 1,
+    model.getLineMaxColumn(lastLine) - 1,
+  );
+  const actions = await vscode.commands.executeCommand<Array<CodeAction | Command>>(
+    'vscode.executeCodeActionProvider',
+    vscode.Uri.parse(tab.uri),
+    range,
+    vscode.CodeActionKind.SourceOrganizeImports.value,
+    10,
+  );
+  const action =
+    actions?.find((candidate) => candidate instanceof vscode.CodeAction && candidate.isPreferred) ??
+    actions?.[0];
+  if (!action) return;
+
+  if (action instanceof vscode.CodeAction) {
+    if (action.edit && !(await vscode.workspace.applyEdit(action.edit))) {
+      throw new Error('The organize imports workspace edit could not be applied');
+    }
+    if (action.command) {
+      await vscode.commands.executeCommand(
+        action.command.command,
+        ...(action.command.arguments ?? []),
+      );
+    }
+    return;
+  }
+
+  await vscode.commands.executeCommand(action.command, ...(action.arguments ?? []));
+}
+
+async function runActiveTabSaveActions(tab: EditorTab): Promise<void> {
+  const settings = useSettingsStore.getState().config.mainView;
+  if (!settings.formatOnSave && !settings.organizeImportsOnSave) return;
+  if (activeTab()?.id !== tab.id) return;
+
   const { getEditor } = await import('./editorRegistry');
   const editor = getEditor();
-  if (!editor) return;
   const model = getModel(tab.uri);
-  if (model && editor.getModel() !== model) editor.setModel(model);
-  await editor.getAction('editor.action.formatDocument')?.run();
+  if (!editor || !model) return;
+  if (editor.getModel() !== model) editor.setModel(model);
+
+  const workspace = useEditorStore.getState().workspace;
+  if (workspace) {
+    const { ensureLanguageClient } = await import('../lsp/LanguageClientService');
+    await ensureLanguageClient(tab.languageId, workspace.rootUri, tab.uri).catch((error) =>
+      console.error('Language server save actions unavailable', error),
+    );
+  }
+
+  if (settings.organizeImportsOnSave) {
+    await organizeImports(tab).catch((error) =>
+      console.error('Organize imports on save failed', error),
+    );
+  }
+  if (settings.formatOnSave) await editor.getAction('editor.action.formatDocument')?.run();
 }
 
 export async function saveTab(tab: EditorTab): Promise<void> {
@@ -31,9 +88,7 @@ export async function saveTab(tab: EditorTab): Promise<void> {
     return;
   }
 
-  if (useSettingsStore.getState().config.mainView.formatOnSave) {
-    await formatActiveTabForSave(tab);
-  }
+  await runActiveTabSaveActions(tab);
   await window.api.file.save({ path: tab.path, content: getModel(tab.uri)?.getValue() ?? content });
   invalidateGitBaseline(tab.path);
   useEditorStore.getState().markSaved(tab.uri);

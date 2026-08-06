@@ -71,6 +71,7 @@ export function registerEditorCommands(): void {
   // LSP-backed commands – each delegates to withActiveEditorLsp
   const lspCommands: { id: string; title: string; keybinding?: string }[] = [
     { id: 'editor.action.formatDocument', title: 'Format Document' },
+    { id: 'editor.action.organizeImports', title: 'Organize Imports' },
     { id: 'editor.action.rename', title: 'Rename Symbol', keybinding: 'F2' },
     { id: 'editor.action.quickFix', title: 'Quick Fix...', keybinding: 'Ctrl+.' },
     { id: 'editor.action.sourceAction', title: 'Source Action...' },

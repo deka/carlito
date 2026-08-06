@@ -169,6 +169,21 @@ export function SettingsPanel() {
           <span>Format on save</span>
         </label>
 
+        <label className="settings-checkbox">
+          <input
+            checked={draft.mainView.organizeImportsOnSave}
+            disabled={isLoading || isSaving}
+            onChange={(event) =>
+              setDraft((prev) => ({
+                ...prev,
+                mainView: { ...prev.mainView, organizeImportsOnSave: event.target.checked },
+              }))
+            }
+            type="checkbox"
+          />
+          <span>Organize imports on save</span>
+        </label>
+
         {configPath ? <p className="settings-path">Config file: {configPath}</p> : null}
 
         <footer className="settings-actions">

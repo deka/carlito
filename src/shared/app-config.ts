@@ -21,6 +21,7 @@ export interface CarloUserConfig {
     tabSize: number;
     wordWrap: boolean;
     formatOnSave: boolean;
+    organizeImportsOnSave: boolean;
   };
   treeView: {
     fontFamily: string;
@@ -37,6 +38,7 @@ export function defaultUserConfig(): CarloUserConfig {
       tabSize: 2,
       wordWrap: true,
       formatOnSave: true,
+      organizeImportsOnSave: true,
     },
     treeView: {
       fontFamily:
@@ -77,6 +79,10 @@ export function mergeUserConfig(
       tabSize: numberInRange(config?.mainView?.tabSize, defaults.mainView.tabSize, 1, 12),
       wordWrap: booleanValue(config?.mainView?.wordWrap, defaults.mainView.wordWrap),
       formatOnSave: booleanValue(config?.mainView?.formatOnSave, defaults.mainView.formatOnSave),
+      organizeImportsOnSave: booleanValue(
+        config?.mainView?.organizeImportsOnSave,
+        defaults.mainView.organizeImportsOnSave,
+      ),
     },
     treeView: {
       fontFamily: nonEmptyString(config?.treeView?.fontFamily, defaults.treeView.fontFamily),
