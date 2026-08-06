@@ -42,18 +42,24 @@ export function registerApplicationCommands(): void {
     id: 'window.zoomIn',
     title: 'Zoom In',
     keybinding: 'Ctrl+=',
-    run: () => window.api.window.zoomIn(),
+    run: async () => {
+      await window.api.window.zoomIn();
+    },
   });
   registerCommand({
     id: 'window.zoomOut',
     title: 'Zoom Out',
     keybinding: 'Ctrl+-',
-    run: () => window.api.window.zoomOut(),
+    run: async () => {
+      await window.api.window.zoomOut();
+    },
   });
   registerCommand({
     id: 'window.zoomReset',
     title: 'Reset Zoom',
     keybinding: 'Ctrl+0',
-    run: () => window.api.window.zoomReset(),
+    run: async () => {
+      await window.api.window.zoomReset();
+    },
   });
 }

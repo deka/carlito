@@ -2,10 +2,16 @@ import { useMemo } from 'react';
 import { runCommand } from '../commands/registry';
 
 const shortcuts = [
-  { label: 'Open File', keys: 'Ctrl+O', command: 'file.open' },
-  { label: 'Open Folder', keys: 'Ctrl+Shift+P → Open Folder', command: 'workspace.openFolder' },
-  { label: 'Quick Open', keys: 'Ctrl+P', command: 'workbench.action.quickOpen' },
-];
+  { label: 'Open a file', detail: 'Start with something local', keys: 'Ctrl O', command: 'file.open', icon: 'file' },
+  { label: 'Open a workspace', detail: 'Bring a project into Carlo', keys: null, command: 'workspace.openFolder', icon: 'folder' },
+  { label: 'Quick open', detail: 'Jump anywhere, instantly', keys: 'Ctrl P', command: 'workbench.action.quickOpen', icon: 'search' },
+] as const;
+
+const actionIcons = {
+  file: <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3.75h8l4 4v12.5H6z" /><path d="M14 3.75v4h4" /></svg>,
+  folder: <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3.75 6.5h6l1.75 2h8.75v10.75H3.75z" /></svg>,
+  search: <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.5" cy="10.5" r="5.75" /><path d="m15 15 4.25 4.25" /></svg>,
+};
 
 const quotes = [
   { text: 'Simplicity is the ultimate sophistication.', author: 'Leonardo da Vinci' },
@@ -53,22 +59,33 @@ export function WelcomeScreen() {
 
   return (
     <div className="welcome-screen">
+      <div className="welcome-aurora welcome-aurora-one" aria-hidden="true" />
+      <div className="welcome-aurora welcome-aurora-two" aria-hidden="true" />
       <div className="welcome-card">
-        <h1>Carlo</h1>
-        <figure className="welcome-quote">
-          <blockquote>{quote.text}</blockquote>
-          <figcaption>— {quote.author}</figcaption>
-        </figure>
+        <div className="welcome-hero">
+          <div className="welcome-logo" aria-hidden="true"><span /></div>
+          <p className="welcome-kicker">Carlo · Focused by design</p>
+          <h1>Code at the<br /><em>speed of thought.</em></h1>
+          <p className="welcome-subtitle">A precise, beautifully quiet space for making exceptional software.</p>
+        </div>
         <div className="welcome-actions">
           {shortcuts.map((shortcut) => (
             <button key={shortcut.command} onClick={() => void runCommand(shortcut.command)}>
-              <span>{shortcut.label}</span>
-              <kbd>{shortcut.keys}</kbd>
+              <span className="welcome-action-icon">{actionIcons[shortcut.icon]}</span>
+              <span className="welcome-action-copy">
+                <strong>{shortcut.label}</strong>
+                <small>{shortcut.detail}</small>
+              </span>
+              {shortcut.keys ? <kbd>{shortcut.keys}</kbd> : null}
             </button>
           ))}
         </div>
+        <figure className="welcome-quote">
+          <blockquote>“{quote.text}”</blockquote>
+          <figcaption>{quote.author}</figcaption>
+        </figure>
         <p className="welcome-hint">
-          Press <kbd>Ctrl+Shift+P</kbd> for all commands.
+          <span aria-hidden="true">✦</span> Press <kbd>Ctrl Shift P</kbd> to make Carlo do almost anything.
         </p>
       </div>
     </div>

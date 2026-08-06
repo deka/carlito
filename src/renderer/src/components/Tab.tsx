@@ -11,7 +11,7 @@ interface Props {
 export function Tab({ tab, active, onSelect, onClose, onContextMenu }: Props) {
   return (
     <div
-      className={`tab ${active ? 'active' : ''}`}
+      className={`tab ${active ? 'active' : ''} ${tab.dirty ? 'dirty' : ''}`}
       onContextMenu={onContextMenu}
     >
       <button
@@ -29,10 +29,10 @@ export function Tab({ tab, active, onSelect, onClose, onContextMenu }: Props) {
         }}
         title={tab.path}
       >
-        <span className="tab-title">
-          {tab.title}
-          {tab.dirty ? ' •' : ''}
+        <span className="tab-file-icon" aria-hidden="true">
+          <span />
         </span>
+        <span className="tab-title">{tab.title}</span>
       </button>
       <button
         type="button"
@@ -43,7 +43,9 @@ export function Tab({ tab, active, onSelect, onClose, onContextMenu }: Props) {
           onClose();
         }}
       >
-        ×
+        <svg viewBox="0 0 16 16" aria-hidden="true">
+          <path d="m5 5 6 6M11 5l-6 6" />
+        </svg>
       </button>
     </div>
   );

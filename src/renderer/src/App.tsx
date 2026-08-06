@@ -18,7 +18,7 @@ import { useWorkbenchUiStore } from './store/useWorkbenchUiStore';
 import { isGitDiffUri } from './git/diffTabs';
 import { isMarkdownPreviewUri } from './markdown/previewTabs';
 
-const activityBarWidth = 42;
+const activityBarWidth = 48;
 const MonacoEditor = lazy(() =>
   loadAfterVscodeServices(() => import('./editor/MonacoEditor')).then((module) => ({ default: module.MonacoEditor })),
 );
@@ -35,7 +35,7 @@ export function App() {
   const splitDirection = useEditorStore((state) => state.splitDirection);
   const sidebarVisible = useWorkbenchUiStore((state) => state.sidebarVisible);
   const { sidebarWidth, pointerHandlers } = useSidebarResize({
-    minWidth: 180,
+    minWidth: 210,
     maxWidth: 560,
     storageKey: 'carlo.sidebarWidth',
     offset: activityBarWidth,

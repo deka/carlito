@@ -1,155 +1,229 @@
 .tab-bar {
   -webkit-app-region: no-drag;
+  position: relative;
   display: flex;
-  align-items: stretch;
+  align-items: center;
   min-width: 0;
   overflow: hidden;
-  background: var(--panel);
+  padding: 4px 6px 4px 5px;
+  border-bottom: 1px solid var(--border-subtle);
+  background: color-mix(in srgb, var(--panel) 88%, var(--bg));
 }
-
+.tab-bar.active-group::after {
+  content: '';
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  height: 1px;
+  pointer-events: none;
+  background: linear-gradient(90deg, transparent, color-mix(in srgb, var(--accent) 45%, transparent) 42%, transparent 78%);
+}
+.tab-navigation {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 1px;
+  margin-right: 5px;
+  padding-right: 5px;
+  border-right: 1px solid var(--border-subtle);
+}
 .tab-strip {
   -webkit-app-region: no-drag;
   display: flex;
   flex: 0 1 auto;
+  align-self: stretch;
+  gap: 3px;
   min-width: 0;
   overflow-x: auto;
   overflow-y: hidden;
   scrollbar-width: none;
   overscroll-behavior-x: contain;
 }
-
-.tab-strip::-webkit-scrollbar {
-  display: none;
-}
-
+.tab-strip::-webkit-scrollbar { display: none; }
 .tab-bar-spacer {
   -webkit-app-region: drag;
   flex: 1 1 auto;
+  align-self: stretch;
   min-width: 24px;
 }
-
 .group-close,
 .nav-button {
   -webkit-app-region: no-drag;
+  display: grid;
   flex: 0 0 auto;
+  place-items: center;
+  width: 27px;
+  height: 27px;
+  padding: 0;
   border: 0;
+  border-radius: 7px;
   background: transparent;
   color: var(--muted);
   cursor: pointer;
   transition: background 120ms ease, color 120ms ease;
 }
-
-.group-close {
-  margin-left: auto;
-  padding: 0 10px;
-}
-
-.nav-button {
-  width: 30px;
-}
-
+.group-close { margin-left: 4px; }
 .group-close:hover,
-.nav-button:hover:not(:disabled) {
-  background: var(--hover);
-  color: var(--fg);
-}
-
-.nav-button:disabled {
-  cursor: default;
-  opacity: 0.34;
+.nav-button:hover:not(:disabled) { background: var(--hover); color: var(--fg); }
+.nav-button:disabled { cursor: default; opacity: 0.34; }
+.group-close svg,
+.nav-button svg {
+  width: 15px;
+  height: 15px;
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-width: 1.5;
 }
 
 .tab {
   -webkit-app-region: no-drag;
+  position: relative;
   display: flex;
   flex: 0 1 210px;
   align-items: stretch;
-  min-width: 132px;
+  min-width: 126px;
   max-width: 210px;
+  overflow: hidden;
+  border: 1px solid transparent;
+  border-radius: 8px;
   background: transparent;
-  color: var(--muted-strong);
-  transition: background 120ms ease, color 120ms ease;
+  color: var(--muted);
+  transition: border-color 120ms ease, background 120ms ease, color 120ms ease, box-shadow 120ms ease;
 }
-
 .tab:hover {
-  background: var(--hover);
-  color: var(--fg);
+  background: color-mix(in srgb, var(--surface) 46%, transparent);
+  color: var(--muted-strong);
 }
-
 .tab.active {
-  background: var(--bg);
+  border-color: var(--border-subtle);
+  background: color-mix(in srgb, var(--surface) 72%, var(--bg));
+  box-shadow: inset 0 1px 0 color-mix(in srgb, white 4%, transparent), 0 2px 8px rgba(0, 0, 0, 0.1);
   color: var(--fg);
 }
-
+.tab.active::after {
+  content: '';
+  position: absolute;
+  right: 26%;
+  bottom: -1px;
+  left: 26%;
+  height: 2px;
+  border-radius: 3px 3px 0 0;
+  background: var(--accent);
+  box-shadow: 0 0 8px color-mix(in srgb, var(--accent) 65%, transparent);
+}
 .tab-select {
   display: flex;
   flex: 1 1 auto;
   align-items: center;
+  gap: 8px;
   min-width: 0;
-  padding: 0 0 0 12px;
+  padding: 0 2px 0 10px;
   border: 0;
   background: transparent;
   color: inherit;
   cursor: pointer;
 }
-
+.tab-file-icon {
+  position: relative;
+  flex: 0 0 auto;
+  width: 12px;
+  height: 14px;
+  border: 1.2px solid currentColor;
+  border-radius: 2px;
+  opacity: 0.72;
+}
+.tab-file-icon::after {
+  content: '';
+  position: absolute;
+  top: -1.2px;
+  right: -1.2px;
+  width: 4px;
+  height: 4px;
+  border-bottom: 1.2px solid currentColor;
+  border-left: 1.2px solid currentColor;
+  background: color-mix(in srgb, var(--panel) 84%, var(--bg));
+}
+.tab-file-icon span {
+  position: absolute;
+  right: 2px;
+  bottom: 2px;
+  left: 2px;
+  height: 1px;
+  background: currentColor;
+  opacity: 0.6;
+}
+.tab.active .tab-file-icon { color: color-mix(in srgb, var(--accent) 76%, white); opacity: 1; }
 .tab-title {
   flex: 1 1 auto;
   min-width: 0;
   overflow: hidden;
+  font-size: 12px;
+  font-weight: 520;
   text-overflow: ellipsis;
   white-space: nowrap;
   text-align: left;
 }
-
+.tab.active .tab-title { font-weight: 620; }
 .tab-close {
+  position: relative;
+  z-index: 1;
+  display: grid;
   flex: 0 0 auto;
-  display: flex;
-  align-items: center;
-  padding: 0 8px;
+  place-items: center;
+  align-self: center;
+  width: 24px;
+  height: 24px;
+  margin-right: 3px;
+  padding: 0;
   border: 0;
+  border-radius: 6px;
   background: transparent;
   color: inherit;
-  font-weight: 600;
-  opacity: 0.58;
+  opacity: 0;
   cursor: pointer;
-  border-radius: var(--radius-sm);
   transition: background 120ms ease, opacity 120ms ease;
 }
-
+.tab-close svg { width: 14px; height: 14px; fill: none; stroke: currentColor; stroke-linecap: round; stroke-width: 1.5; }
 .tab:hover .tab-close,
-.tab.active .tab-close {
-  opacity: 0.9;
+.tab.active .tab-close { opacity: 0.72; }
+.tab-close:hover { background: var(--hover); opacity: 1 !important; }
+.tab.dirty .tab-close { opacity: 1; }
+.tab.dirty .tab-close svg { opacity: 0; }
+.tab.dirty .tab-close::after {
+  content: '';
+  position: absolute;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--accent);
+  box-shadow: 0 0 7px color-mix(in srgb, var(--accent) 70%, transparent);
 }
-
-.tab-close:hover {
-  background: var(--hover);
-  opacity: 1;
-}
-
-.tab-close:focus-visible {
-  outline: 2px solid var(--accent, #0078d4);
-  outline-offset: -2px;
-}
+.tab.dirty:hover .tab-close svg,
+.tab.dirty .tab-close:hover svg { opacity: 1; }
+.tab.dirty:hover .tab-close::after,
+.tab.dirty .tab-close:hover::after { opacity: 0; }
+.tab-close:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; opacity: 1; }
 
 .tab-context-menu {
   -webkit-app-region: no-drag;
   position: fixed;
   z-index: 130;
-  min-width: 190px;
-  padding: 6px;
+  min-width: 210px;
+  padding: 7px;
   border: 1px solid var(--border);
   border-radius: var(--radius-md);
-  background: var(--panel);
+  background: color-mix(in srgb, var(--panel) 94%, transparent);
   box-shadow: var(--shadow);
+  backdrop-filter: blur(18px);
   color: var(--fg);
-  font-size: 13px;
+  font-size: 12px;
 }
-
 .tab-context-menu button {
   display: block;
   width: 100%;
-  padding: 7px 10px;
+  padding: 8px 10px;
   border: 0;
   border-radius: var(--radius-sm);
   background: transparent;
@@ -157,27 +231,14 @@
   text-align: left;
   cursor: pointer;
 }
-
-.tab-context-menu button:hover:not(:disabled) {
-  background: var(--hover);
-}
-
-.tab-context-menu button:disabled {
-  cursor: default;
-  opacity: 0.45;
-}
-
-.tab-context-separator {
-  height: 1px;
-  margin: 5px 4px;
-  background: var(--border-subtle);
-}
+.tab-context-menu button:hover:not(:disabled) { background: var(--active); }
+.tab-context-menu button:disabled { cursor: default; opacity: 0.4; }
+.tab-context-separator { height: 1px; margin: 6px 4px; background: var(--border-subtle); }
 
 .breadcrumbs {
   -webkit-app-region: no-drag;
   display: flex;
   align-items: center;
-  gap: 0;
   min-width: 0;
   overflow: hidden;
   padding: 0 12px;
@@ -187,36 +248,15 @@
   font-size: 12px;
   white-space: nowrap;
 }
-
-.breadcrumb-part {
-  display: inline-flex;
-  align-items: center;
-  min-width: 0;
-}
-
-.breadcrumb-part span:first-child {
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.breadcrumb-current {
-  color: var(--fg);
-  font-weight: 600;
-}
-
-.breadcrumb-separator {
-  flex: 0 0 auto;
-  padding: 0 7px;
-  opacity: 0.48;
-}
-
+.breadcrumb-part { display: inline-flex; align-items: center; min-width: 0; }
+.breadcrumb-part span:first-child { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+.breadcrumb-current { color: var(--fg); font-weight: 600; }
+.breadcrumb-separator { flex: 0 0 auto; padding: 0 7px; opacity: 0.48; }
 .breadcrumbs.compact {
   max-width: min(680px, 100%);
   height: 24px;
   padding: 0 12px;
   border: 0;
-  border-radius: 0;
   background: transparent;
   font-family: inherit;
 }

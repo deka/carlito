@@ -42,15 +42,18 @@ export function FileTree() {
   return (
     <aside className="file-tree">
       <div className="file-tree-header">
-        <span>{workspace?.name ?? 'Explorer'}</span>
+        <div className="file-tree-heading">
+          <span className="file-tree-eyebrow">Explorer</span>
+          <strong>{workspace?.name ?? 'No workspace'}</strong>
+        </div>
         <div className="file-tree-header-actions">
           {workspace ? (
             <>
-              <button onClick={() => tree.setExpandedPaths(new Set())} title="Collapse all">
-                ⇤
+              <button onClick={() => tree.setExpandedPaths(new Set())} title="Collapse all" aria-label="Collapse all">
+                <svg viewBox="0 0 16 16" aria-hidden="true"><path d="m4 6 4-4 4 4M8 2v8M3 13h10" /></svg>
               </button>
-              <button onClick={() => void tree.reload().catch(console.error)} title="Refresh">
-                ↻
+              <button onClick={() => void tree.reload().catch(console.error)} title="Refresh" aria-label="Refresh Explorer">
+                <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M12.5 5.5A5 5 0 1 0 13 10M12.5 2.5v3.25H9.25" /></svg>
               </button>
             </>
           ) : null}

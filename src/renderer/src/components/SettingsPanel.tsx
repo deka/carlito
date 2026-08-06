@@ -50,8 +50,8 @@ export function SettingsPanel() {
             <h2 id="settings-title">Settings</h2>
             <p>Configure the editor basics Carlo supports.</p>
           </div>
-          <button className="settings-close" onClick={closeSettings} title="Close">
-            ×
+          <button className="settings-close" onClick={closeSettings} title="Close" aria-label="Close Settings">
+            <svg viewBox="0 0 16 16" aria-hidden="true"><path d="m5 5 6 6M11 5l-6 6" /></svg>
           </button>
         </header>
 
@@ -179,8 +179,8 @@ export function SettingsPanel() {
           <button disabled={isSaving} onClick={closeSettings} type="button">
             Cancel
           </button>
-          <button disabled={isLoading || isSaving} onClick={() => void save()} type="button">
-            {isSaving ? 'Saving…' : 'Save'}
+          <button className="settings-save" disabled={isLoading || isSaving} onClick={() => void save()} type="button">
+            {isSaving ? 'Saving…' : 'Save changes'}
           </button>
         </footer>
       </section>

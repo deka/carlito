@@ -57,20 +57,22 @@ export function TabBar({ groupId }: Props) {
 
   return (
     <div className={`tab-bar ${groupId === activeGroupId ? 'active-group' : ''}`}>
-      <button
-        className="nav-button"
-        title="Go Back"
-        onClick={() => void import('../editor/navigationHistory').then(({ navigateBack }) => navigateBack())}
-      >
-        ←
-      </button>
-      <button
-        className="nav-button"
-        title="Go Forward"
-        onClick={() => void import('../editor/navigationHistory').then(({ navigateForward }) => navigateForward())}
-      >
-        →
-      </button>
+      <div className="tab-navigation">
+        <button
+          className="nav-button"
+          title="Go Back"
+          onClick={() => void import('../editor/navigationHistory').then(({ navigateBack }) => navigateBack())}
+        >
+          <svg viewBox="0 0 16 16" aria-hidden="true"><path d="m9.5 3.5-4.5 4.5 4.5 4.5" /></svg>
+        </button>
+        <button
+          className="nav-button"
+          title="Go Forward"
+          onClick={() => void import('../editor/navigationHistory').then(({ navigateForward }) => navigateForward())}
+        >
+          <svg viewBox="0 0 16 16" aria-hidden="true"><path d="m6.5 3.5 4.5 4.5-4.5 4.5" /></svg>
+        </button>
+      </div>
       <div
         className="tab-strip"
         onWheel={(event) => {
@@ -99,7 +101,7 @@ export function TabBar({ groupId }: Props) {
       <div className="tab-bar-spacer" aria-hidden="true" />
       {groups.length > 1 ? (
         <button className="group-close" title="Close split" onClick={() => closeGroup(groupId)}>
-          ×
+          <svg viewBox="0 0 16 16" aria-hidden="true"><path d="m5 5 6 6M11 5l-6 6" /></svg>
         </button>
       ) : null}
       {contextMenu ? (

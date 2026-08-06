@@ -33,8 +33,8 @@ export function PanelTabStrip({ activePanel, errorCount, warningCount, onOpen, o
         </button>
       ))}
       <span className="bottom-panel-spacer" />
-      <button className="bottom-panel-close" type="button" onClick={onClose} title="Close Panel">
-        ×
+      <button className="bottom-panel-close" type="button" onClick={onClose} title="Close Panel" aria-label="Close Panel">
+        <svg viewBox="0 0 16 16" aria-hidden="true"><path d="m5 5 6 6M11 5l-6 6" /></svg>
       </button>
     </div>
   );
