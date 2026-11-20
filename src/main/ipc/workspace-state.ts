@@ -1,7 +1,7 @@
 import { BrowserWindow, type IpcMainInvokeEvent } from 'electron';
-import { watch, type FSWatcher } from 'node:fs';
+import { realpathSync, watch, type FSWatcher } from 'node:fs';
 import { realpath } from 'node:fs/promises';
-import { basename, dirname, isAbsolute, join, normalize, resolve, sep } from 'node:path';
+import { basename, dirname, isAbsolute, join, normalize, relative, resolve, sep } from 'node:path';
 import { IPC } from '@shared/ipc';
 import { initialWorkspacePath } from '../workspace';
 import { ignoredWatchNames, isIgnoredPath } from './ignored-paths';
@@ -10,9 +10,17 @@ interface WindowWorkspaceState {
   initialRootPath: string;
   allowedRoots: Set<string>;
   allowedFiles: Set<string>;
-  watcher?: FSWatcher;
+  /** Non-recursive watchers keyed by canonical directory path. */
+  watchers: Map<string, FSWatcher>;
+  /** Canonical path of the watched workspace root. */
   watchedRootPath?: string;
 }
+
+// Recursive fs.watch walks the whole tree synchronously on Linux (including
+// node_modules), which blocks the main process on large folders such as $HOME.
+// Instead, watch only the directories the user can see: the root, `.git`, the
+// directories listed in the file tree and the parents of opened files.
+const maxDirectoryWatchers = 1024;
 
 interface AuthorizePathOptions {
   allowMissing?: boolean;
@@ -33,6 +41,7 @@ function createWorkspaceState(rootPath: string): WindowWorkspaceState {
     initialRootPath: normalizedRoot,
     allowedRoots: new Set([normalizedRoot]),
     allowedFiles: new Set(),
+    watchers: new Map(),
   };
 }
 
@@ -115,26 +124,81 @@ export function registerWindowWorkspace(win: BrowserWindow, initialRootPath?: st
   );
   win.on('closed', () => {
     const state = windowWorkspaceStates.get(webContentsId);
-    state?.watcher?.close();
+    if (state) closeWatchers(state);
     windowWorkspaceStates.delete(webContentsId);
   });
 }
 
+function closeWatchers(state: WindowWorkspaceState): void {
+  for (const watcher of state.watchers.values()) watcher.close();
+  state.watchers.clear();
+  state.watchedRootPath = undefined;
+}
+
+function canonicalPathSync(path: string): string {
+  try {
+    return realpathSync(path);
+  } catch {
+    return resolve(path);
+  }
+}
+
+function dropWatchersUnder(state: WindowWorkspaceState, path: string): void {
+  if (path === state.watchedRootPath) return;
+  for (const [directory, watcher] of state.watchers) {
+    if (!isInsideOrEqual(directory, path)) continue;
+    watcher.close();
+    state.watchers.delete(directory);
+  }
+}
+
+function addDirectoryWatcher(win: BrowserWindow, state: WindowWorkspaceState, directory: string): void {
+  const rootPath = state.watchedRootPath;
+  if (!rootPath || state.watchers.has(directory)) return;
+  if (state.watchers.size >= maxDirectoryWatchers) return;
+  try {
+    const watcher = watch(directory, (eventType, filename) => {
+      const name = filename?.toString();
+      const path = name ? join(directory, name) : undefined;
+      if (path && isIgnoredPath(relative(rootPath, path), ignoredWatchNames)) return;
+      // A deleted/recreated directory leaves a dead watcher behind; drop it so the
+      // next tree listing re-watches the new directory.
+      if (path && eventType === 'rename') dropWatchersUnder(state, path);
+      if (win.isDestroyed()) return;
+      win.webContents.send(IPC.workspaceChanged, {
+        rootPath: workspaceRootFor(win),
+        path,
+        eventType,
+      });
+    });
+    watcher.on('error', () => {
+      watcher.close();
+      if (state.watchers.get(directory) === watcher) state.watchers.delete(directory);
+    });
+    state.watchers.set(directory, watcher);
+  } catch {
+    // Missing or unreadable directory: nothing to watch.
+  }
+}
+
+/** Watch a directory inside the current workspace (non-recursively). */
+export function watchWorkspaceDirectory(win: BrowserWindow, path: string): void {
+  const state = workspaceStateFor(win);
+  const rootPath = state.watchedRootPath;
+  if (!rootPath) return;
+  const directory = canonicalPathSync(path);
+  if (!isInsideOrEqual(directory, rootPath)) return;
+  if (isIgnoredPath(relative(rootPath, directory), ignoredWatchNames)) return;
+  addDirectoryWatcher(win, state, directory);
+}
+
 export function ensureWorkspaceWatcher(win: BrowserWindow, rootPath: string): void {
   const state = workspaceStateFor(win);
-  if (state.watchedRootPath === rootPath && state.watcher) return;
-  state.watcher?.close();
-  state.watchedRootPath = rootPath;
-  try {
-    state.watcher = watch(rootPath, { recursive: true }, (eventType, filename) => {
-      const relativePath = filename?.toString();
-      if (relativePath && isIgnoredPath(relativePath, ignoredWatchNames)) return;
-      const path = relativePath ? join(rootPath, relativePath) : undefined;
-      win.webContents.send(IPC.workspaceChanged, { rootPath, path, eventType });
-    });
-    state.watcher.on('error', (error) => console.error('workspace watcher failed', error));
-  } catch (error) {
-    state.watcher = undefined;
-    console.error('failed to watch workspace', error);
-  }
+  const canonicalRoot = canonicalPathSync(rootPath);
+  if (state.watchedRootPath === canonicalRoot) return;
+  closeWatchers(state);
+  state.watchedRootPath = canonicalRoot;
+  addDirectoryWatcher(win, state, canonicalRoot);
+  // HEAD/index changes refresh git decorations and gutters.
+  addDirectoryWatcher(win, state, join(canonicalRoot, '.git'));
 }

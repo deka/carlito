@@ -11,6 +11,7 @@ import {
   pathExists,
   uniqueCopyDestination,
 } from './file-operations';
+import { rememberLastWorkspacePath } from '../config/app-state';
 import { getGitStatusContext } from './git-status';
 import { searchWorkspace } from './workspace-search';
 import {
@@ -18,6 +19,7 @@ import {
   ensureWorkspaceWatcher,
   registerAllowedFile,
   setWindowWorkspaceRoot,
+  watchWorkspaceDirectory,
   windowFromEvent,
   workspaceRootFor,
 } from './workspace-state';
@@ -87,9 +89,14 @@ export function registerFileHandlers(): void {
     };
   });
 
-  ipcMain.handle(IPC.fileRead, async (event, { path }: ReadFileRequest) => ({
-    content: await readFile(await authorizeWindowPath(windowFromEvent(event), path), 'utf8'),
-  }));
+  ipcMain.handle(IPC.fileRead, async (event, { path }: ReadFileRequest) => {
+    const win = windowFromEvent(event);
+    const authorizedPath = await authorizeWindowPath(win, path);
+    const content = await readFile(authorizedPath, 'utf8');
+    // Detect external edits of open files even when their folder is collapsed.
+    watchWorkspaceDirectory(win, dirname(authorizedPath));
+    return { content };
+  });
 
   ipcMain.handle(IPC.fileReadDataUrl, async (event, { path }: ReadFileRequest) => {
     const authorizedPath = await authorizeWindowPath(windowFromEvent(event), path);
@@ -206,6 +213,7 @@ export function registerFileHandlers(): void {
     const rootPath = result.filePaths[0]!;
     setWindowWorkspaceRoot(win, rootPath);
     ensureWorkspaceWatcher(win, rootPath);
+    rememberLastWorkspacePath(rootPath);
     return { rootPath, rootUri: pathToFileURL(rootPath).toString(), name: basename(rootPath) };
   });
 
@@ -213,6 +221,7 @@ export function registerFileHandlers(): void {
     const win = windowFromEvent(event);
     const rootPath = workspaceRootFor(win);
     ensureWorkspaceWatcher(win, rootPath);
+    rememberLastWorkspacePath(rootPath);
     return { rootPath, rootUri: pathToFileURL(rootPath).toString(), name: basename(rootPath) };
   });
 
@@ -229,7 +238,9 @@ export function registerFileHandlers(): void {
     ) => {
       const win = windowFromEvent(event);
       const authorizedRoot = await authorizeWindowPath(win, rootPath);
-      if (shouldWatch) ensureWorkspaceWatcher(win, authorizedRoot);
+      if (shouldWatch) ensureWorkspaceWatcher(win, workspaceRootFor(win));
+      // Watch every directory shown in the tree (the watcher is non-recursive).
+      if (!recursive) watchWorkspaceDirectory(win, authorizedRoot);
       return {
         children: await listTree(authorizedRoot, {
           recursive,

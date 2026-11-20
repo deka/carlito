@@ -1,5 +1,33 @@
 import { existsSync, statSync } from 'node:fs';
-import { resolve } from 'node:path';
+import { homedir } from 'node:os';
+import { parse, resolve } from 'node:path';
+import { lastWorkspacePath } from './config/app-state';
+
+function isDirectory(path: string): boolean {
+  try {
+    return existsSync(path) && statSync(path).isDirectory();
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Workspace used when no directory is passed on the command line.
+ *
+ * Launching from a terminal inside a project keeps that project. Launching
+ * from a desktop launcher (cwd is $HOME or /) reopens the last workspace,
+ * falling back to the user's home directory.
+ */
+function defaultWorkspacePath(cwd: string): string {
+  const home = homedir();
+  const resolvedCwd = resolve(cwd);
+  const launchedFromLauncher = resolvedCwd === home || resolvedCwd === parse(resolvedCwd).root;
+  if (!launchedFromLauncher && isDirectory(resolvedCwd)) return resolvedCwd;
+
+  const last = lastWorkspacePath();
+  if (last && isDirectory(last)) return last;
+  return home;
+}
 
 export function initialWorkspacePath(argv: string[] = process.argv, cwd: string = process.cwd()): string {
   // In Electron's main process, process.argv is always:
@@ -14,8 +42,8 @@ export function initialWorkspacePath(argv: string[] = process.argv, cwd: string 
     .slice(sliceFrom)
     .filter((arg) => !arg.startsWith('-'))
     .map((arg) => resolve(cwd, arg))
-    .filter((path) => existsSync(path) && statSync(path).isDirectory());
+    .filter(isDirectory);
 
   if (candidates.length > 0) return candidates.at(-1)!;
-  return process.cwd();
+  return defaultWorkspacePath(cwd);
 }
