@@ -113,6 +113,12 @@ export interface GitStatusResult {
   files: GitChangedFile[];
 }
 
+export interface GitPullResult {
+  ok: boolean;
+  /** Combined, trimmed git output (stdout on success, stderr/stdout on failure). */
+  output: string;
+}
+
 export interface WorkspaceSearchRequest {
   query: string;
   maxResults?: number;

@@ -10,6 +10,7 @@ import type {
   FileRenameRequest,
   FileTreeNode,
   GitBaselineResult,
+  GitPullResult,
   GitStatusResult,
   OpenFileResult,
   ReadFileDataUrlResult,
@@ -93,6 +94,8 @@ export const api = Object.freeze({
       ipcRenderer.invoke(IPC.gitBaseline, { path }) as Promise<GitBaselineResult>,
     status: (rootPath: string) =>
       ipcRenderer.invoke(IPC.gitStatus, { rootPath }) as Promise<GitStatusResult>,
+    pull: (rootPath: string) =>
+      ipcRenderer.invoke(IPC.gitPull, { rootPath }) as Promise<GitPullResult>,
   },
   window: {
     zoomIn: () => ipcRenderer.invoke(IPC.windowZoomIn) as Promise<{ zoomLevel: number }>,
