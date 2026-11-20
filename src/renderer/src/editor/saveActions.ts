@@ -4,6 +4,7 @@ import { useSettingsStore } from '../store/useSettingsStore';
 import { activeTab, isUriOpen, useEditorStore } from '../store/useEditorStore';
 import { disposeModel, getModel, replaceModelUri } from './models';
 import { invalidateGitBaseline } from './gitGutter';
+import { isTerminalUri } from '../terminal/terminalTabs';
 
 async function organizeImports(tab: EditorTab): Promise<void> {
   const model = getModel(tab.uri);
@@ -73,6 +74,8 @@ async function runActiveTabSaveActions(tab: EditorTab): Promise<void> {
 }
 
 export async function saveTab(tab: EditorTab): Promise<void> {
+  // Terminal tabs have no content to save.
+  if (isTerminalUri(tab.uri)) return;
   const model = getModel(tab.uri);
   const content = model?.getValue() ?? '';
   if (tab.uri.startsWith('untitled:')) {

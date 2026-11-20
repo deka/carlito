@@ -88,6 +88,16 @@ export function installAppMenu(): void {
       ],
     },
     {
+      label: 'Terminal',
+      submenu: [
+        {
+          label: 'New Terminal',
+          accelerator: 'CmdOrCtrl+Shift+T',
+          click: () => sendCommand('workbench.action.terminal.new'),
+        },
+      ],
+    },
+    {
       label: 'Navigate',
       submenu: [
         {

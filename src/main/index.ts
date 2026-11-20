@@ -7,6 +7,7 @@ import { registerConfigHandlers } from './ipc/config-handlers';
 import { registerFileHandlers } from './ipc/file-handlers';
 import { registerGitHandlers } from './ipc/git-handlers';
 import { registerLspHandlers } from './ipc/lsp-handlers';
+import { registerTerminalHandlers } from './ipc/terminal-handlers';
 import { registerWindowHandlers } from './ipc/window-handlers';
 import { registerLocalResourceProtocol, registerLocalResourceScheme } from './local-resource-protocol';
 import { installAppMenu } from './menu';
@@ -28,6 +29,7 @@ if (!gotSingleInstanceLock) {
   registerFileHandlers();
   registerGitHandlers();
   registerLspHandlers();
+  registerTerminalHandlers();
   registerWindowHandlers();
   installAppMenu();
 

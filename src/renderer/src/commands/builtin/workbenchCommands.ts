@@ -3,6 +3,7 @@ import { navigateProblem } from '../../problems/navigation';
 import { useEditorStore, activeTab } from '../../store/useEditorStore';
 import { useBottomPanelStore } from '../../store/useBottomPanelStore';
 import { useWorkbenchUiStore } from '../../store/useWorkbenchUiStore';
+import { openTerminal } from '../../terminal/terminalTabs';
 import { registerCommand } from '../registry';
 
 export function registerWorkbenchCommands(): void {
@@ -13,6 +14,12 @@ export function registerWorkbenchCommands(): void {
       const folder = await window.api.workspace.openFolderDialog();
       if (folder) useEditorStore.getState().setWorkspace(folder);
     },
+  });
+  registerCommand({
+    id: 'workbench.action.terminal.new',
+    title: 'Terminal: New Terminal',
+    keybinding: 'Ctrl+Shift+T',
+    run: openTerminal,
   });
   registerCommand({
     id: 'workbench.action.findInFiles',

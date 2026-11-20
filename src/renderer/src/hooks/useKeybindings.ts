@@ -6,6 +6,20 @@ import {
   parseKeybinding,
   runCommand,
 } from '../commands/registry';
+import { isTerminalElement } from '../terminal/terminalTabs';
+
+type KeyDescriptor = ReturnType<typeof parseKeybinding>;
+
+/**
+ * While a terminal has focus, plain Ctrl+<key>, Alt+<key> and function keys belong
+ * to the shell (Ctrl+C, Ctrl+W, Ctrl+P, F8 in htop…). Only Ctrl+Shift and Ctrl+Alt
+ * workbench shortcuts stay active, except Ctrl+Shift+C/V (terminal copy/paste).
+ */
+function allowedInTerminal(descriptor: KeyDescriptor): boolean {
+  if (!descriptor.ctrl || !(descriptor.shift || descriptor.alt)) return false;
+  const key = descriptor.key.toLowerCase();
+  return !(descriptor.shift && !descriptor.alt && (key === 'c' || key === 'v' || key === 'keyc' || key === 'keyv'));
+}
 
 /**
  * Register a global `keydown` listener that dispatches to registered commands
@@ -22,7 +36,7 @@ export function useKeybindings(): void {
     // Commands registered later (extensions, tests) are picked up on the
     // next keydown because we re-read getCommands() lazily.
     let descriptorsReady = false;
-    type Binding = { commandId: string; descriptor: ReturnType<typeof parseKeybinding> };
+    type Binding = { commandId: string; descriptor: KeyDescriptor };
     let bindings: Binding[] = [];
 
     function buildBindings(): void {
@@ -45,7 +59,9 @@ export function useKeybindings(): void {
         buildBindings();
       }
 
+      const inTerminal = isTerminalElement(event.target);
       for (const { commandId, descriptor } of bindings) {
+        if (inTerminal && !allowedInTerminal(descriptor)) continue;
         if (matchesEvent(descriptor, event)) {
           event.preventDefault();
           event.stopPropagation();

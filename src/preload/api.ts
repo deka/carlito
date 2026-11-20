@@ -30,6 +30,12 @@ import type {
   LspStartOptions,
   LspStartResult,
 } from '@shared/lsp-types';
+import type {
+  TerminalCreateRequest,
+  TerminalCreateResult,
+  TerminalDataEvent,
+  TerminalExitEvent,
+} from '@shared/terminal-types';
 import type { Message } from 'vscode-jsonrpc';
 
 const on = <T>(channel: string, cb: (payload: T) => void) => {
@@ -127,6 +133,16 @@ export const api = Object.freeze({
     onServerStderr: (cb: (payload: LspServerStderr) => void) =>
       on<LspServerStderr>(IPC.lspServerStderr, cb),
     onServerLog: (cb: (payload: LspServerLog) => void) => on<LspServerLog>(IPC.lspServerLog, cb),
+  },
+  terminal: {
+    create: (request: TerminalCreateRequest) =>
+      ipcRenderer.invoke(IPC.terminalCreate, request) as Promise<TerminalCreateResult>,
+    write: (id: string, data: string) => ipcRenderer.send(IPC.terminalWrite, { id, data }),
+    resize: (id: string, cols: number, rows: number) =>
+      ipcRenderer.send(IPC.terminalResize, { id, cols, rows }),
+    kill: (id: string) => ipcRenderer.invoke(IPC.terminalKill, { id }) as Promise<{ ok: true }>,
+    onData: (cb: (event: TerminalDataEvent) => void) => on<TerminalDataEvent>(IPC.terminalData, cb),
+    onExit: (cb: (event: TerminalExitEvent) => void) => on<TerminalExitEvent>(IPC.terminalExit, cb),
   },
   menu: {
     onCommand: (cb: (commandId: string) => void) =>

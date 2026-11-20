@@ -83,6 +83,8 @@ function storeRecentFiles(files: RecentFile[]): void {
 }
 
 function updateRecentFiles(files: RecentFile[], file: RecentFile): RecentFile[] {
+  // Terminal tabs are not files: never list them as recent.
+  if (file.uri.startsWith('terminal:')) return files;
   const next = [file, ...files.filter((candidate) => candidate.uri !== file.uri)].slice(0, maxRecentFiles);
   storeRecentFiles(next);
   return next;

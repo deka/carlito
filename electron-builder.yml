@@ -11,10 +11,16 @@ asarUnpack:
   - node_modules/typescript-language-server/**
   - node_modules/typescript/**
   - node_modules/vscode-json-languageserver/**
+  - node_modules/node-pty/**
 mac:
   target:
     - zip
 linux:
   target:
     - dir
+    - deb
+  category: Development
+  maintainer: carlo
+deb:
+  packageName: carlo
 npmRebuild: false

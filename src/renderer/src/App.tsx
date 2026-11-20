@@ -17,6 +17,7 @@ import { useThemeStore } from './store/useThemeStore';
 import { useWorkbenchUiStore } from './store/useWorkbenchUiStore';
 import { isGitDiffUri } from './git/diffTabs';
 import { isMarkdownPreviewUri } from './markdown/previewTabs';
+import { isTerminalUri } from './terminal/terminalTabs';
 
 const activityBarWidth = 48;
 const MonacoEditor = lazy(() =>
@@ -25,6 +26,7 @@ const MonacoEditor = lazy(() =>
 const GitDiffEditor = lazy(() =>
   loadAfterVscodeServices(() => import('./editor/GitDiffEditor')).then((module) => ({ default: module.GitDiffEditor })),
 );
+const TerminalView = lazy(() => import('./components/TerminalView').then((module) => ({ default: module.TerminalView })));
 const MarkdownPreview = lazy(() => import('./components/MarkdownPreview').then((module) => ({ default: module.MarkdownPreview })));
 
 export function App() {
@@ -99,6 +101,10 @@ export function App() {
                 {tab && isGitDiffUri(tab.uri) ? (
                   <Suspense fallback={<div className="editor-stack" />}>
                     <GitDiffEditor groupId={group.id} />
+                  </Suspense>
+                ) : tab && isTerminalUri(tab.uri) ? (
+                  <Suspense fallback={<div className="editor-stack" />}>
+                    <TerminalView groupId={group.id} />
                   </Suspense>
                 ) : tab && isMarkdownPreviewUri(tab.uri) ? (
                   <Suspense fallback={<div className="editor-stack" />}>
