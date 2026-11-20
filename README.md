@@ -83,14 +83,9 @@ Before sending changes, run `npm run typecheck`, `npm run lint` and `npm run bui
 
 ## Releasing
 
-Releases are built by GitHub Actions ([`.github/workflows/release.yml`](.github/workflows/release.yml)). Push a version tag:
+Releases are built by GitHub Actions ([`.github/workflows/release.yml`](.github/workflows/release.yml)). Every push to `main` typechecks, lints, builds the Linux packages, and publishes them with checksums as a GitHub release.
 
-```sh
-git tag v0.2.0
-git push origin v0.2.0
-```
-
-The workflow typechecks, lints, builds the Linux packages, and publishes them with checksums as a GitHub release. The package version comes from the tag. Tags with a suffix (`v0.2.0-beta.1`) are published as pre-releases. To build packages without publishing, run the workflow manually from the Actions tab and download the artifact.
+The version is the `major.minor` from `package.json` plus the workflow run number as patch (for example `0.1.42`, tagged `v0.1.42`). Bump `major.minor` in `package.json` to start a new series. To build packages without publishing, run the workflow manually from the Actions tab (on any branch) and download the artifact.
 
 ## Language support
 
