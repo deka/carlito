@@ -1,4 +1,4 @@
-import type { FormEvent, RefObject } from 'react';
+import type { DragEvent, FormEvent, RefObject } from 'react';
 import { createContext, useContext } from 'react';
 import type { FileTreeNode } from '@shared/file-types';
 
@@ -40,4 +40,24 @@ export interface TreeClipboard {
 export interface TreeCreatePrompt {
   kind: 'file' | 'directory';
   parentPath: string;
+}
+
+export interface TreeDragContextValue {
+  dropTarget: string | undefined;
+  onDragStart: (event: DragEvent, node: FileTreeNode) => void;
+  onDragOver: (event: DragEvent, node: FileTreeNode, destinationDirectory: string) => void;
+  onDrop: (event: DragEvent, destinationDirectory: string) => void;
+  onDragEnd: () => void;
+}
+
+export const TreeDragContext = createContext<TreeDragContextValue>({
+  dropTarget: undefined,
+  onDragStart: () => {},
+  onDragOver: () => {},
+  onDrop: () => {},
+  onDragEnd: () => {},
+});
+
+export function useTreeDragContext(): TreeDragContextValue {
+  return useContext(TreeDragContext);
 }

@@ -28,6 +28,7 @@ import type {
   FileCopyRequest,
   FileCreateRequest,
   FileDeleteRequest,
+  FileMoveRequest,
   FileRenameRequest,
   OpenFileResult,
   ReadFileRequest,
@@ -200,6 +201,50 @@ export function registerFileHandlers(): void {
     await rename(authorizedPath, destinationPath);
     return operationResult(destinationPath);
   });
+
+  ipcMain.handle(
+    IPC.fileMove,
+    async (event, { sourcePath, destinationDirectory }: FileMoveRequest) => {
+      const win = windowFromEvent(event);
+      const authorizedSource = await authorizeWindowPath(win, sourcePath);
+      const authorizedDestination = await authorizeWindowPath(win, destinationDirectory);
+      const root = workspaceRootFor(win);
+      if (root && isPathInsideOrEqual(root, authorizedSource)) {
+        throw new Error('Cannot move the workspace folder');
+      }
+      if (!(await stat(authorizedDestination)).isDirectory()) {
+        throw new Error('Destination is not a folder');
+      }
+      const sourceStats = await stat(authorizedSource);
+      if (
+        sourceStats.isDirectory() &&
+        isPathInsideOrEqual(authorizedDestination, authorizedSource)
+      ) {
+        throw new Error('Cannot move a folder into itself');
+      }
+      const destinationPath = await authorizeWindowPath(
+        win,
+        join(authorizedDestination, basename(authorizedSource)),
+        { allowMissing: true },
+      );
+      if (destinationPath === authorizedSource) return operationResult(destinationPath);
+      if (await pathExists(destinationPath)) {
+        throw new Error(`“${basename(destinationPath)}” already exists in the destination folder`);
+      }
+      try {
+        await rename(authorizedSource, destinationPath);
+      } catch (error) {
+        if ((error as NodeJS.ErrnoException).code !== 'EXDEV') throw error;
+        await cp(authorizedSource, destinationPath, {
+          recursive: sourceStats.isDirectory(),
+          errorOnExist: true,
+          force: false,
+        });
+        await rm(authorizedSource, { recursive: true, force: true });
+      }
+      return operationResult(destinationPath);
+    },
+  );
 
   ipcMain.handle(IPC.fileRevealInFolder, async (event, { path }: { path: string }) => {
     shell.showItemInFolder(await authorizeWindowPath(windowFromEvent(event), path));

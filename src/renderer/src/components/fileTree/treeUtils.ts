@@ -20,6 +20,10 @@ export function parentDirectory(path: string): string {
   return path.replace(/[\\/]+$/, '').replace(/[\\/][^\\/]*$/, '');
 }
 
+export function separatorFor(path: string): string {
+  return path.includes('\\') ? '\\' : '/';
+}
+
 export function hasValidChildName(name: string): boolean {
   return Boolean(name) && name !== '.' && name !== '..' && !/[\\/]/.test(name);
 }

@@ -2,12 +2,13 @@ import type { FormEvent } from 'react';
 import { useEditorStore } from '../store/useEditorStore';
 import { InlineCreateRow } from './fileTree/InlineCreateRow';
 import { TreeNode } from './fileTree/TreeNode';
-import { CreateContext } from './fileTree/types';
+import { CreateContext, TreeDragContext } from './fileTree/types';
 import { useActiveTabPath } from './fileTree/useActiveTabPath';
 import { useFileTreeOperations } from './fileTree/useFileTreeOperations';
 import { useInitialWorkspace } from './fileTree/useInitialWorkspace';
 import { useRevealActivePath } from './fileTree/useRevealActivePath';
 import { useTreeContextMenu } from './fileTree/useTreeContextMenu';
+import { useTreeDragAndDrop } from './fileTree/useTreeDragAndDrop';
 import { useWorkspaceTree } from './fileTree/useWorkspaceTree';
 import { useWorkspaceWatcher } from './fileTree/useWorkspaceWatcher';
 
@@ -18,6 +19,14 @@ export function FileTree() {
   const tree = useWorkspaceTree(workspace);
   const { contextMenu, openContextMenu, closeContextMenu } = useTreeContextMenu(workspace);
   const operations = useFileTreeOperations({ workspace, tree, closeContextMenu });
+
+  const dragAndDrop = useTreeDragAndDrop({
+    workspace,
+    expandedPaths: tree.expandedPaths,
+    toggleDirectory: (node) => void tree.toggleDirectory(node),
+    canMoveNode: operations.canMoveNode,
+    moveNode: operations.moveNode,
+  });
 
   useWorkspaceWatcher(workspace, tree.reloadPreservingScroll);
   useRevealActivePath({
@@ -59,10 +68,18 @@ export function FileTree() {
           ) : null}
         </div>
       </div>
-      <div className="file-tree-body" ref={tree.bodyRef} onContextMenu={(event) => openContextMenu(event)}>
+      <div
+        className={`file-tree-body ${workspace && dragAndDrop.dropTarget === workspace.rootPath ? 'drop-target' : ''}`}
+        ref={tree.bodyRef}
+        onContextMenu={(event) => openContextMenu(event)}
+        onDragOver={dragAndDrop.onBodyDragOver}
+        onDrop={dragAndDrop.onBodyDrop}
+        onDragLeave={dragAndDrop.onBodyDragLeave}
+      >
         {tree.loading ? (
           <div className="tree-empty">Loading…</div>
         ) : (
+          <TreeDragContext.Provider value={dragAndDrop}>
           <CreateContext.Provider value={createContextValue}>
             <ul>
               {workspace && operations.createPrompt?.parentPath === workspace.rootPath ? (
@@ -90,6 +107,7 @@ export function FileTree() {
               ))}
             </ul>
           </CreateContext.Provider>
+          </TreeDragContext.Provider>
         )}
       </div>
       {contextMenu ? (
