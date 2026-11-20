@@ -5,3 +5,7 @@ dist/
 *.log
 .env
 *.tsbuildinfo
+
+# Claude Code
+.claude/settings.local.json
+.claude/worktrees/
