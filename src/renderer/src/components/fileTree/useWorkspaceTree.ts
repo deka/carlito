@@ -199,6 +199,24 @@ export function useWorkspaceTree(workspace: WorkspaceFolderResult | undefined) {
     setExpandedPaths((paths) => new Set(paths).add(path));
   }, []);
 
+  const applyMove = useCallback(
+    async (oldPath: string, newPath: string, destinationDirectory: string): Promise<void> => {
+      if (!workspace) return;
+      const oldPrefix = `${oldPath}${oldPath.includes('\\') ? '\\' : '/'}`;
+      const next = new Set<string>();
+      for (const path of expandedPathsRef.current) {
+        if (path === oldPath) next.add(newPath);
+        else if (path.startsWith(oldPrefix)) next.add(`${newPath}${path.slice(oldPath.length)}`);
+        else next.add(path);
+      }
+      next.add(destinationDirectory);
+      expandedPathsRef.current = next;
+      setExpandedPaths(next);
+      await load(workspace.rootPath, { showLoading: false, preserveScroll: true });
+    },
+    [workspace, load],
+  );
+
   const reload = useCallback(async (): Promise<void> => {
     if (workspace) await load(workspace.rootPath);
   }, [workspace, load]);
@@ -221,5 +239,6 @@ export function useWorkspaceTree(workspace: WorkspaceFolderResult | undefined) {
     toggleDirectory,
     ensureDirectoryLoaded,
     expandPath,
+    applyMove,
   };
 }

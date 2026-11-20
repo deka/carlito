@@ -16,6 +16,7 @@ export const IPC = {
   fileDelete: 'file:delete',
   fileCopy: 'file:copy',
   fileRename: 'file:rename',
+  fileMove: 'file:move',
   fileRevealInFolder: 'file:revealInFolder',
   gitBaseline: 'git:baseline',
   gitStatus: 'git:status',

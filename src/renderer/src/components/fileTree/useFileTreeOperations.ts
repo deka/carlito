@@ -1,11 +1,11 @@
 import { useEffect, useRef, useState } from 'react';
 import type { FormEvent } from 'react';
-import type { FileTreeNode, WorkspaceFolderResult } from '@shared/file-types';
+import type { FileOperationResult, FileTreeNode, WorkspaceFolderResult } from '@shared/file-types';
 import { languageIdFromPath } from '@shared/language-registry';
 import { useEditorStore } from '../../store/useEditorStore';
 import type { useWorkspaceTree } from './useWorkspaceTree';
 import type { TreeClipboard, TreeContextMenu, TreeCreatePrompt } from './types';
-import { hasValidChildName, parentDirectory } from './treeUtils';
+import { hasValidChildName, parentDirectory, separatorFor } from './treeUtils';
 import { relativePath, titleFromPath } from '../../commands/builtin/pathUtils';
 import { fileUriFromPath } from '../../utils/uriUtils';
 import { loadAfterVscodeServices } from '../../vscode/servicesReady';
@@ -107,6 +107,22 @@ export function useFileTreeOperations({
     setCreateName('');
   }
 
+  async function updateOpenEditorsForPathChange(oldPath: string, result: FileOperationResult): Promise<void> {
+    const oldPrefix = `${oldPath}${separatorFor(oldPath)}`;
+    const tabsToUpdate = useEditorStore
+      .getState()
+      .tabs.filter((tab) => tab.path === oldPath || tab.path.startsWith(oldPrefix));
+    if (tabsToUpdate.length > 0) {
+      const { replaceModelUri, getModel } = await loadAfterVscodeServices(() => import('../../editor/models'));
+      for (const tab of tabsToUpdate) {
+        const nextPath = tab.path === oldPath ? result.path : `${result.path}${tab.path.slice(oldPath.length)}`;
+        const content = getModel(tab.uri)?.getValue();
+        if (content !== undefined) replaceModelUri(tab.uri, fileUriFromPath(nextPath), content, languageIdFromPath(nextPath));
+      }
+    }
+    useEditorStore.getState().updateRenamedPath(oldPath, result.path, result.uri);
+  }
+
   function copyNode(menu: TreeContextMenu): void {
     if (!menu.node) return;
     setClipboard({ path: menu.node.path, type: menu.node.type, name: menu.node.name });
@@ -149,19 +165,24 @@ export function useFileTreeOperations({
     void runFileOperation(async () => {
       const oldPath = menu.node!.path;
       const result = await window.api.file.rename({ path: oldPath, newName });
-      const tabsToRename = useEditorStore
-        .getState()
-        .tabs.filter((tab) => tab.path === oldPath || tab.path.startsWith(`${oldPath}${oldPath.includes('\\') ? '\\' : '/'}`));
-      if (tabsToRename.length > 0) {
-        const { replaceModelUri, getModel } = await loadAfterVscodeServices(() => import('../../editor/models'));
-        for (const tab of tabsToRename) {
-          const nextPath = tab.path === oldPath ? result.path : `${result.path}${tab.path.slice(oldPath.length)}`;
-          const content = getModel(tab.uri)?.getValue();
-          if (content !== undefined) replaceModelUri(tab.uri, fileUriFromPath(nextPath), content, languageIdFromPath(nextPath));
-        }
-      }
-      useEditorStore.getState().updateRenamedPath(oldPath, result.path, result.uri);
+      await updateOpenEditorsForPathChange(oldPath, result);
       await tree.refreshDirectory(parentPath);
+    });
+  }
+
+  function canMoveNode(sourcePath: string, destinationDirectory: string): boolean {
+    if (parentDirectory(sourcePath) === destinationDirectory) return false;
+    if (destinationDirectory === sourcePath) return false;
+    return !destinationDirectory.startsWith(`${sourcePath}${separatorFor(sourcePath)}`);
+  }
+
+  async function moveNode(sourcePath: string, destinationDirectory: string): Promise<void> {
+    if (!canMoveNode(sourcePath, destinationDirectory)) return;
+    await runFileOperation(async () => {
+      const result = await window.api.file.move({ sourcePath, destinationDirectory });
+      if (result.path === sourcePath) return;
+      await updateOpenEditorsForPathChange(sourcePath, result);
+      await tree.applyMove(sourcePath, result.path, destinationDirectory);
     });
   }
 
@@ -197,6 +218,8 @@ export function useFileTreeOperations({
     pasteNode,
     deleteNode,
     renameNode,
+    canMoveNode,
+    moveNode,
     copyAbsolutePath,
     copyRelativePath,
     revealInFolder,

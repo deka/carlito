@@ -3,7 +3,8 @@ import type { FileTreeNode, GitFileStatus } from '@shared/file-types';
 import { DevIcon } from './DevIcon';
 import { iconForNode } from './icons';
 import { InlineCreateRow } from './InlineCreateRow';
-import { useCreateContext } from './types';
+import { parentDirectory } from './treeUtils';
+import { useCreateContext, useTreeDragContext } from './types';
 
 const gitStatusLabels: Record<GitFileStatus, string> = {
   added: 'A',
@@ -33,14 +34,21 @@ export function TreeNode({
   onContextMenu: (event: MouseEvent, node: FileTreeNode) => void;
 }) {
   const createCtx = useCreateContext();
+  const dragCtx = useTreeDragContext();
   const expanded = expandedPaths.has(node.path);
   const isDirectory = node.type === 'directory';
   const icon = iconForNode(node, expanded);
+  const dropDirectory = isDirectory ? node.path : parentDirectory(node.path);
   return (
     <li>
       <button
-        className={`tree-row ${isDirectory ? 'directory' : 'file'} ${node.gitStatus ? `git-${node.gitStatus}` : ''} ${node.path === activePath ? 'active' : ''}`}
+        className={`tree-row ${isDirectory ? 'directory' : 'file'} ${node.gitStatus ? `git-${node.gitStatus}` : ''} ${node.path === activePath ? 'active' : ''} ${isDirectory && dragCtx.dropTarget === node.path ? 'drop-target' : ''}`}
         data-tree-path={node.path}
+        draggable
+        onDragStart={(event) => dragCtx.onDragStart(event, node)}
+        onDragOver={(event) => dragCtx.onDragOver(event, node, dropDirectory)}
+        onDrop={(event) => dragCtx.onDrop(event, dropDirectory)}
+        onDragEnd={dragCtx.onDragEnd}
         style={{ paddingLeft: 8 + depth * 14 }}
         onClick={() => (isDirectory ? onToggleDirectory(node) : onOpenFile(node))}
         onContextMenu={(event) => onContextMenu(event, node)}
@@ -52,7 +60,7 @@ export function TreeNode({
         {node.gitStatus ? <span className="tree-git-badge">{gitStatusLabels[node.gitStatus]}</span> : null}
       </button>
       {isDirectory && expanded && node.children ? (
-        <ul>
+        <ul className={dragCtx.dropTarget === node.path ? 'drop-target-children' : undefined}>
           {createCtx.prompt?.parentPath === node.path ? (
             <InlineCreateRow
               kind={createCtx.prompt.kind}
