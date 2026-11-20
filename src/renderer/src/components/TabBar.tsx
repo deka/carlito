@@ -3,6 +3,7 @@ import { disposeModel } from '../editor/models';
 import type { EditorTab } from '../store/useEditorStore';
 import { isUriOpen, useEditorStore } from '../store/useEditorStore';
 import { useContextMenuDismiss } from '../hooks/useContextMenuDismiss';
+import { canToggleMarkdownPreview, useIsMarkdownPreviewed, useMarkdownViewStore } from '../markdown/markdownViewStore';
 import { Tab } from './Tab';
 import { TabContextMenu } from './TabContextMenu';
 import type { TabContextMenuState } from './TabContextMenuState';
@@ -56,6 +57,9 @@ export function TabBar({ groupId }: Props) {
   const groupTabs = group
     ? group.tabIds.flatMap((id) => tabs.find((tab) => tab.id === id) ?? [])
     : [];
+
+  const activeGroupTab = groupTabs.find((tab) => tab.id === group?.activeTabId);
+  const markdownPreviewed = useIsMarkdownPreviewed(groupId, activeGroupTab);
 
   useContextMenuDismiss(contextMenu !== undefined, () => setContextMenu(undefined));
 
@@ -201,6 +205,30 @@ export function TabBar({ groupId }: Props) {
         onDragOver={showEndDropTarget}
         onDrop={(event) => dropTab(event, groupTabs.length)}
       />
+      {canToggleMarkdownPreview(activeGroupTab) ? (
+        <button
+          className={`markdown-toggle ${markdownPreviewed ? 'active' : ''}`}
+          type="button"
+          title={markdownPreviewed ? 'Show Source (Ctrl+Alt+V)' : 'Show Preview (Ctrl+Alt+V)'}
+          aria-label={markdownPreviewed ? 'Show Markdown Source' : 'Show Markdown Preview'}
+          aria-pressed={markdownPreviewed}
+          onClick={() => {
+            setActiveGroup(groupId);
+            useMarkdownViewStore.getState().togglePreview(groupId, activeGroupTab.id);
+          }}
+        >
+          {markdownPreviewed ? (
+            <svg viewBox="0 0 16 16" aria-hidden="true">
+              <path d="M5.5 4.5 2 8l3.5 3.5M10.5 4.5 14 8l-3.5 3.5" />
+            </svg>
+          ) : (
+            <svg viewBox="0 0 16 16" aria-hidden="true">
+              <path d="M1.5 8s2.5-4.5 6.5-4.5S14.5 8 14.5 8 12 12.5 8 12.5 1.5 8 1.5 8Z" />
+              <circle cx="8" cy="8" r="2" />
+            </svg>
+          )}
+        </button>
+      ) : null}
       {group?.activeTabId ? (
         <button
           className="group-split"

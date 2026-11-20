@@ -3,6 +3,7 @@ import { softWrapEnabled } from '../../editor/editorOptions';
 import { getModel } from '../../editor/models';
 import { navigateBack, navigateForward } from '../../editor/navigationHistory';
 import { ensureLanguageClient } from '../../lsp/LanguageClientService';
+import { canToggleMarkdownPreview, useMarkdownViewStore } from '../../markdown/markdownViewStore';
 import { isMarkdownTab, markdownPreviewUri } from '../../markdown/previewTabs';
 import { activeTab, useEditorStore } from '../../store/useEditorStore';
 import { useSettingsStore } from '../../store/useSettingsStore';
@@ -58,6 +59,14 @@ function openMarkdownPreviewToSide(): void {
     languageId: 'markdown',
     title: `Preview ${titleFromPath(tab.path)}`,
   });
+}
+
+function toggleMarkdownPreview(): void {
+  const tab = activeTab();
+  // Silent no-op elsewhere: the shortcut also fires from terminals and other tabs.
+  if (!canToggleMarkdownPreview(tab)) return;
+  const groupId = useEditorStore.getState().activeGroupId;
+  useMarkdownViewStore.getState().togglePreview(groupId, tab.id);
 }
 
 async function runEditorAction(actionId: string): Promise<void> {
@@ -122,6 +131,12 @@ export function registerEditorCommands(): void {
     title: 'Markdown: Open Preview to the Side',
     keybinding: 'Ctrl+Shift+V',
     run: openMarkdownPreviewToSide,
+  });
+  registerCommand({
+    id: 'markdown.togglePreview',
+    title: 'Markdown: Toggle Preview',
+    keybinding: 'Ctrl+Alt+V',
+    run: toggleMarkdownPreview,
   });
   registerCommand({
     id: 'workbench.action.navigateBack',
