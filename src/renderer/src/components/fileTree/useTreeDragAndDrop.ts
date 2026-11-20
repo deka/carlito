@@ -93,7 +93,6 @@ export function useTreeDragAndDrop({
       draggedPathRef.current = node.path;
       event.dataTransfer.effectAllowed = 'move';
       event.dataTransfer.setData(treeDragDataType, node.path);
-      event.dataTransfer.setData('text/plain', node.path);
     },
     onDragOver: (event, node, destinationDirectory) => {
       if (acceptDrop(event, destinationDirectory)) scheduleAutoExpand(node);
