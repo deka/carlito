@@ -32,7 +32,65 @@ If a feature does not help you open code, edit code, navigate code, or get LSP f
 - Git gutter baseline for changed lines
 - LSP integration over stdio
 - Configurable language-to-server mapping
+- Integrated terminal tabs (`Ctrl+Shift+T`)
 - Optional `carlo` shell command for opening folders from a terminal
+
+## Install
+
+Download the latest package from the [Releases page](https://github.com/deka/carlo/releases).
+
+### Debian / Ubuntu (recommended)
+
+```sh
+sudo apt install ./carlo_<version>_amd64.deb
+```
+
+Then start it from the applications menu, or from a terminal:
+
+```sh
+carlo            # open the current directory
+carlo ~/project  # open a folder
+```
+
+The package installs Carlo in `/opt/carlo`, adds the `carlo` command, and installs an AppArmor profile so the Chromium sandbox works on Ubuntu 24.04 and later without root.
+
+### Other Linux distributions
+
+```sh
+tar xzf carlo-<version>.tar.gz
+./carlo-<version>/carlo
+```
+
+On distributions that restrict unprivileged user namespaces (Ubuntu 24.04+), the tarball cannot start sandboxed: use the `.deb` there.
+
+Each release ships a `SHA256SUMS` file:
+
+```sh
+sha256sum --check --ignore-missing SHA256SUMS
+```
+
+## Build from source
+
+Requirements: Node.js 24, npm, and a C/C++ toolchain for the terminal's native module (`node-pty`): `python3`, `make`, `g++` (on Debian/Ubuntu: `sudo apt install build-essential python3`).
+
+```sh
+npm ci
+npm run dev       # run in development mode
+npm run package   # build dist/carlo_<version>_amd64.deb and dist/carlo-<version>.tar.gz
+```
+
+Before sending changes, run `npm run typecheck`, `npm run lint` and `npm run build`.
+
+## Releasing
+
+Releases are built by GitHub Actions ([`.github/workflows/release.yml`](.github/workflows/release.yml)). Push a version tag:
+
+```sh
+git tag v0.2.0
+git push origin v0.2.0
+```
+
+The workflow typechecks, lints, builds the Linux packages, and publishes them with checksums as a GitHub release. The package version comes from the tag. Tags with a suffix (`v0.2.0-beta.1`) are published as pre-releases. To build packages without publishing, run the workflow manually from the Actions tab and download the artifact.
 
 ## Language support
 
@@ -79,6 +137,7 @@ Use `null` for languages that should not start a server.
 | `Ctrl+S` | `Cmd+S` | Save |
 | `Ctrl+Shift+S` | `Cmd+Shift+S` | Save as |
 | `Ctrl+W` | `Cmd+W` | Close tab |
+| `Ctrl+Shift+T` | `Cmd+Shift+T` | New terminal |
 | `Ctrl+Space` | `Cmd+Space` | Trigger suggestions |
 | `Ctrl+[` | `Cmd+[` | Go back |
 | `Ctrl+]` | `Cmd+]` | Go forward |
@@ -87,6 +146,8 @@ Use `null` for languages that should not start a server.
 | `Ctrl+=` | `Cmd+=` | Zoom in |
 | `Ctrl+-` | `Cmd+-` | Zoom out |
 | `Ctrl+0` | `Cmd+0` | Reset zoom |
+
+In a terminal, keys go to the shell (`Ctrl+C`, `Ctrl+W`, `Ctrl+P`…); only `Ctrl+Shift` / `Ctrl+Alt` shortcuts reach Carlo. Copy and paste with `Ctrl+Shift+C` / `Ctrl+Shift+V`.
 
 ## Philosophy
 

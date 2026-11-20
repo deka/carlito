@@ -3,6 +3,11 @@
   "version": "0.1.0",
   "description": "A minimal Electron IDE",
   "license": "MIT",
+  "homepage": "https://github.com/deka/carlo",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/deka/carlo.git"
+  },
   "main": "./out/main/index.js",
   "type": "module",
   "scripts": {
@@ -14,7 +19,8 @@
     "lint": "eslint .",
     "format": "prettier --write .",
     "start": "electron-vite preview",
-    "package": "electron-vite build && electron-builder"
+    "electron:install": "node node_modules/electron/install.js",
+    "package": "npm run electron:install && electron-vite build && electron-builder"
   },
   "dependencies": {
     "node-pty": "1.1.0",

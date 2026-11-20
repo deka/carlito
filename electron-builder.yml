@@ -17,10 +17,11 @@ mac:
     - zip
 linux:
   target:
-    - dir
     - deb
+    - tar.gz
   category: Development
   maintainer: carlo
+  synopsis: A minimal Electron IDE
 deb:
   packageName: carlo
 npmRebuild: false
