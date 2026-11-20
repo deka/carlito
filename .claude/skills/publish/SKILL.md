@@ -6,7 +6,7 @@ description: Publie le travail terminé d'un worktree — commit, push de la bra
 # Publish
 
 Publie le travail d'un worktree Carlo en une seule passe :
-commit → push de la branche → ouverture de la PR → merge (ce qui ferme la PR).
+commit → push de la branche → ouverture de la PR → merge (ce qui ferme la PR) → nettoyage du worktree.
 
 L'invocation de ce skill vaut autorisation explicite de commit, push, ouvrir et merger la PR.
 Ne demande pas de confirmation supplémentaire, sauf si une vérification ci-dessous échoue.
@@ -84,10 +84,30 @@ gh pr merge "$BRANCH" --repo "$REPO" --squash --delete-branch
 - Ne modifie pas le checkout principal de l'utilisateur (pas de `checkout`/`pull` sur `main` hors du worktree) ;
   un simple `git fetch origin` suffit.
 
-## 7. Rapport
+## 7. Nettoyage du worktree
+
+**Uniquement si la PR est bien mergée** (vérifie avec `gh pr view "$BRANCH" --repo "$REPO" --json state` → `MERGED`).
+Si la PR est restée ouverte ou si le merge a échoué, garde le worktree et la branche.
+
+- Si le worktree a été créé dans cette session avec `EnterWorktree`, quitte-le avec `ExitWorktree` (action `remove`).
+- Sinon, depuis le checkout principal (jamais depuis le worktree lui-même) :
+
+  ```sh
+  MAIN=$(git worktree list --porcelain | awk '/^worktree /{print $2; exit}')
+  WT=$(git rev-parse --show-toplevel)
+  git -C "$MAIN" worktree remove "$WT"
+  git -C "$MAIN" branch -D "$BRANCH"   # -D car un squash merge n'est pas vu comme mergé par git
+  git -C "$MAIN" fetch --prune origin
+  ```
+
+- `git worktree remove` refuse s'il reste des fichiers modifiés ou non suivis : n'ajoute pas `--force`,
+  rapporte ce qui reste et laisse l'utilisateur décider.
+
+## 8. Rapport
 
 Termine avec :
 
 - le(s) commit(s) créé(s) (hash court + sujet),
 - l'URL de la PR et son état final (mergée/fermée, ou restée ouverte avec la raison),
+- si le worktree a été supprimé ou conservé (et pourquoi),
 - la commande pour mettre à jour le checkout principal si besoin : `git -C <repo> pull origin main`.
