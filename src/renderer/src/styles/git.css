@@ -206,3 +206,43 @@
 .git-diff-host {
   min-height: 0;
 }
+
+.git-panel-pull-message {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin: 0 4px 8px;
+  padding: 6px 8px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  color: var(--muted);
+}
+
+.git-panel-pull-message pre {
+  flex: 1 1 auto;
+  min-width: 0;
+  margin: 0;
+  font: inherit;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.git-panel-pull-message.git-panel-error {
+  border-color: var(--git-deleted);
+}
+
+.git-panel-pull-message button {
+  flex: 0 0 auto;
+  padding: 0 4px;
+  border: 0;
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+  font-size: 16px;
+  line-height: 1;
+}
+
+.git-panel-pull-message button:hover {
+  color: var(--fg);
+}

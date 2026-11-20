@@ -20,6 +20,7 @@ export const IPC = {
   fileRevealInFolder: 'file:revealInFolder',
   gitBaseline: 'git:baseline',
   gitStatus: 'git:status',
+  gitPull: 'git:pull',
   workspaceOpenFolderDialog: 'workspace:openFolderDialog',
   workspaceCurrentFolder: 'workspace:currentFolder',
   workspaceListTree: 'workspace:listTree',
