@@ -1,11 +1,10 @@
 import { useEffect, useMemo, useState } from 'react';
 import { getModel } from '../editor/models';
-import { renderMarkdown } from '../markdown/renderMarkdown';
+import { markdownImageUrls, renderMarkdown } from '../markdown/renderMarkdown';
 import { isMarkdownPreviewUri, sourceUriFromMarkdownPreviewUri } from '../markdown/previewTabs';
 import {
   localMarkdownAssetPath,
   markdownAnchorUrl,
-  markdownImageUrls,
   resolveMarkdownUrl,
 } from '../markdown/markdownPathUtils';
 import { useEditorStore } from '../store/useEditorStore';

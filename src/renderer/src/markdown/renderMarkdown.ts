@@ -1,9 +1,16 @@
+import DOMPurify from 'dompurify';
+import { Marked, type Tokens } from 'marked';
 import {
   isSafeResolvedMarkdownImageUrl,
   markdownAnchorUrl,
   markdownExternalImageUrl,
   markdownLocalResourceUrl,
 } from './markdownPathUtils';
+
+interface RenderMarkdownOptions {
+  resolveUrl?: (url: string) => string | undefined;
+  resolveImageUrl?: (url: string) => string | undefined;
+}
 
 function escapeHtml(value: string): string {
   return value
@@ -14,149 +21,65 @@ function escapeHtml(value: string): string {
     .replaceAll("'", '&#39;');
 }
 
-interface RenderMarkdownOptions {
-  resolveUrl?: (url: string) => string | undefined;
-  resolveImageUrl?: (url: string) => string | undefined;
-}
-
 function safeUrl(value: string, options: RenderMarkdownOptions): string | undefined {
   const trimmed = value.trim();
   const directUrl = markdownAnchorUrl(trimmed);
-  if (directUrl) return escapeHtml(directUrl);
+  if (directUrl) return directUrl;
 
   const resolved = options.resolveUrl?.(trimmed);
-  const localUrl = resolved ? markdownLocalResourceUrl(resolved) : undefined;
-  return localUrl ? escapeHtml(localUrl) : undefined;
+  return resolved ? markdownLocalResourceUrl(resolved) : undefined;
 }
 
 function safeImageUrl(value: string, options: RenderMarkdownOptions): string | undefined {
   const trimmed = value.trim();
   const externalUrl = markdownExternalImageUrl(trimmed);
-  if (externalUrl) return escapeHtml(externalUrl);
+  if (externalUrl) return externalUrl;
 
   const resolved = options.resolveImageUrl?.(trimmed);
-  return resolved && isSafeResolvedMarkdownImageUrl(resolved) ? escapeHtml(resolved) : undefined;
+  return resolved && isSafeResolvedMarkdownImageUrl(resolved) ? resolved : undefined;
 }
 
-function inlineMarkdown(value: string, options: RenderMarkdownOptions): string {
-  let html = escapeHtml(value);
-
-  html = html.replace(/`([^`]+)`/g, '<code>$1</code>');
-  html = html.replace(
-    /!\[([^\]]*)\]\(([^)\s]+)(?:\s+&quot;[^&]*&quot;)?\)/g,
-    (_match, alt: string, url: string) => {
-      const src = safeImageUrl(url, options);
-      return src ? `<img src="${src}" alt="${alt}">` : alt;
+function createMarked(options: RenderMarkdownOptions): Marked {
+  return new Marked({
+    gfm: true,
+    breaks: false,
+    renderer: {
+      link({ href, title, tokens }: Tokens.Link): string {
+        const text = this.parser.parseInline(tokens);
+        const url = safeUrl(href, options);
+        if (!url) return text;
+        const titleAttr = title ? ` title="${escapeHtml(title)}"` : '';
+        return `<a href="${escapeHtml(url)}"${titleAttr} rel="noreferrer">${text}</a>`;
+      },
+      image({ href, title, text }: Tokens.Image): string {
+        const url = safeImageUrl(href, options);
+        if (!url) return escapeHtml(text);
+        const titleAttr = title ? ` title="${escapeHtml(title)}"` : '';
+        return `<img src="${escapeHtml(url)}" alt="${escapeHtml(text)}"${titleAttr}>`;
+      },
     },
-  );
-  html = html.replace(
-    /\[([^\]]+)\]\(([^)\s]+)(?:\s+&quot;[^&]*&quot;)?\)/g,
-    (_match, text: string, url: string) => {
-      const href = safeUrl(url, options);
-      return href ? `<a href="${href}" rel="noreferrer">${text}</a>` : text;
-    },
-  );
-  html = html.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
-  html = html.replace(/__([^_]+)__/g, '<strong>$1</strong>');
-  html = html.replace(/(^|\W)\*([^*]+)\*(?=\W|$)/g, '$1<em>$2</em>');
-  html = html.replace(/(^|\W)_([^_]+)_(?=\W|$)/g, '$1<em>$2</em>');
-  return html;
+  });
 }
 
-function isBlank(line: string): boolean {
-  return line.trim().length === 0;
-}
-
-function isBlockStarter(line: string): boolean {
-  return (
-    isBlank(line) ||
-    /^```/.test(line.trim()) ||
-    /^#{1,6}\s+/.test(line) ||
-    /^>\s?/.test(line) ||
-    /^[-*+]\s+/.test(line) ||
-    /^\d+[.)]\s+/.test(line) ||
-    /^ {0,3}(-{3,}|\*{3,}|_{3,})\s*$/.test(line)
-  );
-}
+// Links/images are already filtered by the renderer; also allow the local resource scheme.
+const allowedUriRegexp = /^(?:(?:https?|mailto|carlo-file):|#)/i;
 
 export function renderMarkdown(markdown: string, options: RenderMarkdownOptions = {}): string {
-  const lines = markdown.replace(/\r\n?/g, '\n').split('\n');
-  const html: string[] = [];
+  const html = createMarked(options).parse(markdown, { async: false });
+  return DOMPurify.sanitize(html, {
+    ALLOWED_URI_REGEXP: allowedUriRegexp,
+    FORBID_TAGS: ['style', 'form', 'button', 'textarea', 'select', 'iframe'],
+  });
+}
 
-  for (let index = 0; index < lines.length; index += 1) {
-    const line = lines[index] ?? '';
-    const trimmed = line.trim();
-
-    if (!trimmed) continue;
-
-    if (trimmed.startsWith('```')) {
-      const language = trimmed.slice(3).trim();
-      const code: string[] = [];
-      index += 1;
-      while (index < lines.length && !(lines[index] ?? '').trim().startsWith('```')) {
-        code.push(lines[index] ?? '');
-        index += 1;
-      }
-      const languageClass = language ? ` class="language-${escapeHtml(language)}"` : '';
-      html.push(`<pre><code${languageClass}>${escapeHtml(code.join('\n'))}</code></pre>`);
-      continue;
+/** Image URLs referenced by the document (inline and reference-style). */
+export function markdownImageUrls(markdown: string): string[] {
+  const urls = new Set<string>();
+  const marked = new Marked({ gfm: true });
+  marked.walkTokens(marked.lexer(markdown), (token) => {
+    if (token.type === 'image' && (token as Tokens.Image).href) {
+      urls.add((token as Tokens.Image).href.trim());
     }
-
-    const heading = /^(#{1,6})\s+(.*)$/.exec(line);
-    if (heading) {
-      const level = heading[1]!.length;
-      html.push(`<h${level}>${inlineMarkdown(heading[2]!.trim(), options)}</h${level}>`);
-      continue;
-    }
-
-    if (/^ {0,3}(-{3,}|\*{3,}|_{3,})\s*$/.test(line)) {
-      html.push('<hr>');
-      continue;
-    }
-
-    if (/^>\s?/.test(line)) {
-      const quote: string[] = [line.replace(/^>\s?/, '')];
-      while (index + 1 < lines.length && /^>\s?/.test(lines[index + 1] ?? '')) {
-        index += 1;
-        quote.push((lines[index] ?? '').replace(/^>\s?/, ''));
-      }
-      html.push(`<blockquote>${renderMarkdown(quote.join('\n'), options)}</blockquote>`);
-      continue;
-    }
-
-    if (/^[-*+]\s+/.test(line)) {
-      const items: string[] = [];
-      while (index < lines.length && /^[-*+]\s+/.test(lines[index] ?? '')) {
-        items.push(
-          `<li>${inlineMarkdown((lines[index] ?? '').replace(/^[-*+]\s+/, ''), options)}</li>`,
-        );
-        index += 1;
-      }
-      index -= 1;
-      html.push(`<ul>${items.join('')}</ul>`);
-      continue;
-    }
-
-    if (/^\d+[.)]\s+/.test(line)) {
-      const items: string[] = [];
-      while (index < lines.length && /^\d+[.)]\s+/.test(lines[index] ?? '')) {
-        items.push(
-          `<li>${inlineMarkdown((lines[index] ?? '').replace(/^\d+[.)]\s+/, ''), options)}</li>`,
-        );
-        index += 1;
-      }
-      index -= 1;
-      html.push(`<ol>${items.join('')}</ol>`);
-      continue;
-    }
-
-    const paragraph: string[] = [line.trim()];
-    while (index + 1 < lines.length && !isBlockStarter(lines[index + 1] ?? '')) {
-      index += 1;
-      paragraph.push((lines[index] ?? '').trim());
-    }
-    html.push(`<p>${inlineMarkdown(paragraph.join(' '), options)}</p>`);
-  }
-
-  return html.join('\n');
+  });
+  return [...urls];
 }
