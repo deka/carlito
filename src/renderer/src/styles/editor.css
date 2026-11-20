@@ -22,6 +22,31 @@
   color: var(--fg);
 }
 
+.markdown-preview-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+  outline: none;
+}
+
+.markdown-preview-action {
+  margin-left: auto;
+  flex: 0 0 auto;
+  padding: 3px 9px;
+  border: 1px solid var(--border, transparent);
+  border-radius: 6px;
+  background: transparent;
+  color: var(--muted-strong);
+  font: inherit;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.markdown-preview-action:hover {
+  background: var(--hover);
+  color: var(--fg);
+}
+
 .markdown-preview.empty,
 .markdown-preview-error {
   display: grid;

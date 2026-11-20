@@ -165,6 +165,11 @@ export function installAppMenu(): void {
           accelerator: 'CmdOrCtrl+Shift+V',
           click: () => sendCommand('markdown.showPreviewToSide'),
         },
+        {
+          label: 'Toggle Markdown Preview',
+          accelerator: 'CmdOrCtrl+Alt+V',
+          click: () => sendCommand('markdown.togglePreview'),
+        },
         { type: 'separator' },
         { role: 'toggleDevTools' },
       ],

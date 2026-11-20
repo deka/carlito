@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { getModel } from '../editor/models';
 import { renderMarkdown } from '../markdown/renderMarkdown';
-import { sourceUriFromMarkdownPreviewUri } from '../markdown/previewTabs';
+import { isMarkdownPreviewUri, sourceUriFromMarkdownPreviewUri } from '../markdown/previewTabs';
 import {
   localMarkdownAssetPath,
   markdownAnchorUrl,
@@ -12,14 +12,22 @@ import { useEditorStore } from '../store/useEditorStore';
 
 interface Props {
   groupId: string;
+  /** Set when the preview replaces the source editor in place. */
+  onShowSource?: () => void;
 }
 
-export function MarkdownPreview({ groupId }: Props) {
+export function MarkdownPreview({ groupId, onShowSource }: Props) {
   const tab = useEditorStore((state) => {
     const activeTabId = state.groups.find((group) => group.id === groupId)?.activeTabId;
     return state.tabs.find((candidate) => candidate.id === activeTabId);
   });
-  const sourceUri = tab ? sourceUriFromMarkdownPreviewUri(tab.uri) : undefined;
+  const sourceUri = tab
+    ? isMarkdownPreviewUri(tab.uri)
+      ? sourceUriFromMarkdownPreviewUri(tab.uri)
+      : onShowSource
+        ? tab.uri
+        : undefined
+    : undefined;
   const [content, setContent] = useState('');
   const [imageDataUrls, setImageDataUrls] = useState<Record<string, string>>({});
   const [error, setError] = useState<string | undefined>(undefined);
@@ -110,6 +118,11 @@ export function MarkdownPreview({ groupId }: Props) {
       <div className="markdown-preview-toolbar">
         <span>Preview</span>
         <span className="markdown-preview-path">{tab.path}</span>
+        {onShowSource ? (
+          <button type="button" className="markdown-preview-action" onClick={onShowSource}>
+            Show Source
+          </button>
+        ) : null}
       </div>
       {error ? (
         <div className="markdown-preview-error">{error}</div>

@@ -1,5 +1,6 @@
 import type { EditorTab } from '../store/useEditorStore';
 import { isMarkdownTab } from '../markdown/previewTabs';
+import { canToggleMarkdownPreview, useIsMarkdownPreviewed, useMarkdownViewStore } from '../markdown/markdownViewStore';
 import { runCommand } from '../commands/registry';
 import { relativePath } from '../commands/builtin/pathUtils';
 import type { TabContextMenuState } from './TabContextMenuState';
@@ -31,6 +32,7 @@ export function TabContextMenu({
   const tabsToRight = contextTabIndex >= 0 ? groupTabs.slice(contextTabIndex + 1) : [];
   const otherTabs = groupTabs.filter((tab) => tab.id !== contextMenu.tab.id);
   const savedTabs = groupTabs.filter((tab) => !tab.dirty);
+  const previewed = useIsMarkdownPreviewed(groupId, contextMenu.tab);
 
   return (
     <div
@@ -44,6 +46,16 @@ export function TabContextMenu({
           <button type="button" onClick={() => onRunAction(() => runCommand('markdown.showPreviewToSide'))}>
             Open Markdown Preview to Side
           </button>
+          {canToggleMarkdownPreview(contextMenu.tab) ? (
+            <button
+              type="button"
+              onClick={() =>
+                onRunAction(() => useMarkdownViewStore.getState().togglePreview(groupId, contextMenu.tab.id))
+              }
+            >
+              {previewed ? 'Show Markdown Source' : 'Show Markdown Preview'}
+            </button>
+          ) : null}
           <div className="tab-context-separator" />
         </>
       ) : null}
