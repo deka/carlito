@@ -103,13 +103,3 @@ export function resolveMarkdownUrl(markdownPath: string, url: string): string | 
   const suffix = suffixIndex >= 0 ? url.slice(suffixIndex) : '';
   return `${pathToLocalResourceUrl(localPath)}${suffix}`;
 }
-
-export function markdownImageUrls(markdown: string): string[] {
-  return [
-    ...new Set(
-      [...markdown.matchAll(/!\[[^\]]*\]\(([^)\s]+)(?:\s+"[^"]*")?\)/g)]
-        .map((match) => match[1]!)
-        .filter(Boolean),
-    ),
-  ];
-}

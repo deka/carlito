@@ -144,7 +144,7 @@
 .markdown-preview-content code {
   padding: 0.12em 0.35em;
   border-radius: var(--radius-sm);
-  background: var(--panel);
+  background: var(--panel2);
   font-family: var(--editor-font-family, var(--mono-font-family));
   font-size: 0.92em;
 }
@@ -152,14 +152,53 @@
 .markdown-preview-content pre {
   overflow: auto;
   padding: 14px 16px;
-  border: 0;
-  border-radius: 0;
-  background: transparent;
+  border: 1px solid var(--border, var(--border-subtle));
+  border-radius: var(--radius-sm);
+  background: var(--panel2);
+  line-height: 1.5;
 }
 
 .markdown-preview-content pre code {
   padding: 0;
   background: transparent;
+}
+
+.markdown-preview-content table {
+  display: block;
+  max-width: 100%;
+  overflow: auto;
+  margin: 0 0 1em;
+  border-collapse: collapse;
+}
+
+.markdown-preview-content th,
+.markdown-preview-content td {
+  padding: 6px 13px;
+  border: 1px solid var(--border, var(--border-subtle));
+}
+
+.markdown-preview-content th {
+  background: var(--panel);
+  font-weight: 600;
+}
+
+.markdown-preview-content tr:nth-child(2n) td {
+  background: color-mix(in srgb, var(--panel) 45%, transparent);
+}
+
+.markdown-preview-content li > ul,
+.markdown-preview-content li > ol,
+.markdown-preview-content li > p {
+  margin: 0.25em 0;
+}
+
+.markdown-preview-content li:has(> input[type='checkbox']) {
+  list-style: none;
+}
+
+.markdown-preview-content li > input[type='checkbox'] {
+  margin: 0 0.45em 0 -1.3em;
+  vertical-align: middle;
 }
 
 .markdown-preview-content a {
