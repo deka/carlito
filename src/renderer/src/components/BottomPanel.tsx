@@ -2,6 +2,7 @@ import { lazy, Suspense } from 'react';
 import { problemCounts, useProblemsStore } from '../store/useProblemsStore';
 import { useBottomPanelStore } from '../store/useBottomPanelStore';
 import { PanelTabStrip } from './PanelTabStrip';
+import { useBottomPanelResize } from '../hooks/useBottomPanelResize';
 
 const ProblemsPanel = lazy(() => import('./ProblemsPanel').then((module) => ({ default: module.ProblemsPanel })));
 const SearchPanel = lazy(() => import('./SearchPanel').then((module) => ({ default: module.SearchPanel })));
@@ -13,11 +14,19 @@ export function BottomPanel() {
   const closePanel = useBottomPanelStore((state) => state.closePanel);
   const problems = useProblemsStore((state) => state.problems);
   const counts = problemCounts(problems);
+  const { panelHeight, panelRef, pointerHandlers } = useBottomPanelResize();
 
   if (!activePanel) return null;
 
   return (
-    <section className="bottom-panel" aria-label="Panel">
+    <section className="bottom-panel" aria-label="Panel" ref={panelRef} style={{ height: panelHeight }}>
+      <div
+        className="bottom-panel-resizer"
+        role="separator"
+        aria-orientation="horizontal"
+        aria-label="Resize panel"
+        {...pointerHandlers}
+      />
       <PanelTabStrip
         activePanel={activePanel}
         errorCount={counts.errors}
