@@ -1,12 +1,25 @@
 .bottom-panel {
+  position: relative;
   display: grid;
   grid-template-rows: 38px minmax(0, 1fr);
-  height: min(300px, 40vh);
   min-height: 150px;
+  max-height: calc(100vh - 200px);
   border-top: 1px solid var(--border-subtle);
   background: color-mix(in srgb, var(--panel) 94%, var(--bg));
   box-shadow: 0 -10px 30px rgba(0, 0, 0, 0.06);
 }
+.bottom-panel-resizer {
+  position: absolute;
+  top: -3px;
+  right: 0;
+  left: 0;
+  z-index: 5;
+  height: 6px;
+  cursor: row-resize;
+  transition: background 120ms ease;
+}
+.bottom-panel-resizer:hover,
+.bottom-panel-resizer:active { background: var(--accent); }
 .bottom-panel-tabs {
   display: flex;
   align-items: center;
