@@ -10,11 +10,15 @@ import { registerLspHandlers } from './ipc/lsp-handlers';
 import { registerTerminalHandlers } from './ipc/terminal-handlers';
 import { registerWindowHandlers } from './ipc/window-handlers';
 import { registerLocalResourceProtocol, registerLocalResourceScheme } from './local-resource-protocol';
-import { installAppMenu } from './menu';
+import { installAppMenu, registerMenuHandlers } from './menu';
 import { initialWorkspacePath } from './workspace';
 import { createWindow } from './window';
 
 registerLocalResourceScheme();
+
+// The single-instance lock is keyed on userData. Give dev builds their own profile so
+// `npm run dev` does not hand off to an installed Carlo that is already running.
+if (!app.isPackaged) app.setPath('userData', `${app.getPath('userData')}-dev`);
 
 const gotSingleInstanceLock = app.requestSingleInstanceLock();
 
@@ -32,6 +36,7 @@ if (!gotSingleInstanceLock) {
   registerTerminalHandlers();
   registerWindowHandlers();
   installAppMenu();
+  registerMenuHandlers();
 
   app.on('second-instance', (_event, argv, workingDirectory) => {
     const win = createWindow({ initialWorkspacePath: initialWorkspacePath(argv, workingDirectory) });
