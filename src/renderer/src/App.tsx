@@ -113,7 +113,7 @@ export function App() {
   }, []);
   return (
     <main
-      className="app-shell"
+      className={`app-shell ${window.api.menu.inAppMenuBar ? 'in-app-menubar' : ''}`}
       style={{
         gridTemplateColumns: sidebarVisible
           ? `${activityBarWidth}px ${sidebarWidth}px 4px minmax(0, 1fr)`

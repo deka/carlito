@@ -1,4 +1,5 @@
-import { useEffect } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import { APP_MENU_LABELS, type AppMenuLabel } from '@shared/app-menu';
 import { runCommand } from '../commands/registry';
 import { useEditorStore, useActiveTab } from '../store/useEditorStore';
 import { titleFromState } from './appTitleUtils';
@@ -13,7 +14,7 @@ export function AppTitleBar() {
 
   return (
     <header className="app-titlebar">
-      <div aria-hidden="true" />
+      {window.api.menu.inAppMenuBar ? <AppMenuBar /> : <div aria-hidden="true" />}
       <button
         className="app-command-center"
         type="button"
@@ -35,5 +36,52 @@ export function AppTitleBar() {
         <span>{workspaceName ?? 'No workspace'}</span>
       </div>
     </header>
+  );
+}
+
+function AppMenuBar() {
+  const [openLabel, setOpenLabel] = useState<AppMenuLabel | null>(null);
+  const navRef = useRef<HTMLElement>(null);
+
+  // Publish the menu bar width so the search box can stay centred without overlapping it.
+  useEffect(() => {
+    const nav = navRef.current;
+    const titlebar = nav?.parentElement;
+    if (!nav || !titlebar) return;
+    const observer = new ResizeObserver(() => {
+      titlebar.style.setProperty('--app-menubar-width', `${Math.ceil(nav.offsetWidth)}px`);
+    });
+    observer.observe(nav);
+    return () => observer.disconnect();
+  }, []);
+
+  const open = (label: AppMenuLabel, button: HTMLElement) => {
+    const rect = button.getBoundingClientRect();
+    setOpenLabel(label);
+    void window.api.menu
+      .popup({ label, x: rect.left, y: rect.bottom + 2 })
+      .finally(() => setOpenLabel((current) => (current === label ? null : current)));
+  };
+
+  return (
+    <nav ref={navRef} className="app-menubar" aria-label="Application menu">
+      {APP_MENU_LABELS.map((label) => (
+        <button
+          key={label}
+          type="button"
+          className={`app-menubar-item ${openLabel === label ? 'open' : ''}`}
+          aria-haspopup="menu"
+          aria-expanded={openLabel === label}
+          onClick={(event) => open(label, event.currentTarget)}
+          onKeyDown={(event) => {
+            if (event.key !== 'ArrowDown') return;
+            event.preventDefault();
+            open(label, event.currentTarget);
+          }}
+        >
+          {label}
+        </button>
+      ))}
+    </nav>
   );
 }

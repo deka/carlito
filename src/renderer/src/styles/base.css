@@ -174,6 +174,54 @@ button:focus-visible,
   color: var(--fg);
 }
 
+.app-shell.in-app-menubar .app-titlebar {
+  /* Linux/Windows keep a native window frame: the title bar must not be a drag region,
+     otherwise (e.g. on Wayland, where Electron draws the frame) it swallows clicks. */
+  -webkit-app-region: no-drag;
+  container-type: inline-size;
+  /* Side columns stay equal (search centred) as long as the search width leaves room
+     for the menu bar on both sides; on narrow windows the left column wins. */
+  grid-template-columns: minmax(max-content, 1fr) auto minmax(0, 1fr);
+  gap: 12px;
+  padding: 0 10px 0 6px;
+}
+.app-shell.in-app-menubar .app-command-center {
+  width: clamp(150px, calc(100cqw - 2 * (var(--app-menubar-width, 430px) + 12px)), 520px);
+}
+@media (max-width: 1100px) {
+  .app-shell.in-app-menubar .app-command-prompt { display: none; }
+}
+@media (max-width: 960px) {
+  .app-shell.in-app-menubar .app-command-center kbd { display: none; }
+  .app-shell.in-app-menubar .app-titlebar-workspace { display: none; }
+}
+.app-menubar {
+  -webkit-app-region: no-drag;
+  display: flex;
+  align-items: center;
+  gap: 1px;
+  justify-self: start;
+}
+.app-menubar-item {
+  flex: 0 0 auto;
+  height: 26px;
+  padding: 0 8px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--muted-strong);
+  font: inherit;
+  font-size: 12px;
+  white-space: nowrap;
+  cursor: default;
+}
+.app-menubar-item:hover,
+.app-menubar-item.open {
+  background: color-mix(in srgb, var(--surface) 80%, transparent);
+  color: var(--fg);
+}
+.app-menubar-item:focus-visible { outline: 1px solid var(--accent); outline-offset: -1px; }
+
 .welcome-logo {
   position: relative;
   display: grid;

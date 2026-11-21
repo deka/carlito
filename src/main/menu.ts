@@ -1,5 +1,13 @@
-import { BrowserWindow, Menu, type MenuItemConstructorOptions } from 'electron';
+import { BrowserWindow, Menu, ipcMain, type MenuItemConstructorOptions } from 'electron';
+import { APP_MENU_LABELS, type MenuPopupRequest } from '@shared/app-menu';
 import { IPC } from '@shared/ipc';
+
+/**
+ * On Linux/Windows the native menu bar is hidden and its top-level entries are drawn
+ * in the renderer title bar instead; clicking one pops up the matching native submenu.
+ * macOS keeps its global menu bar.
+ */
+export const useInAppMenuBar = process.platform !== 'darwin';
 
 export function installAppMenu(): void {
   const sendCommand = (commandId: string) => {
@@ -194,4 +202,22 @@ export function installAppMenu(): void {
     },
   ];
   Menu.setApplicationMenu(Menu.buildFromTemplate(template));
+}
+
+export function registerMenuHandlers(): void {
+  ipcMain.handle(IPC.menuPopup, (event, request: MenuPopupRequest) => {
+    const win = BrowserWindow.fromWebContents(event.sender);
+    if (!win || !APP_MENU_LABELS.includes(request?.label)) return { ok: false };
+    const item = Menu.getApplicationMenu()?.items.find((entry) => entry.label === request.label);
+    if (!item?.submenu) return { ok: false };
+    const zoom = event.sender.getZoomFactor();
+    return new Promise<{ ok: true }>((resolve) => {
+      item.submenu!.popup({
+        window: win,
+        x: Math.round(request.x * zoom),
+        y: Math.round(request.y * zoom),
+        callback: () => resolve({ ok: true }),
+      });
+    });
+  });
 }

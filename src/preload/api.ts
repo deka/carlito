@@ -1,5 +1,6 @@
 import { ipcRenderer } from 'electron';
 import type { CarloUserConfig } from '@shared/app-config';
+import type { MenuPopupRequest } from '@shared/app-menu';
 import { IPC } from '@shared/ipc';
 import type {
   FileCopyRequest,
@@ -151,6 +152,9 @@ export const api = Object.freeze({
     onExit: (cb: (event: TerminalExitEvent) => void) => on<TerminalExitEvent>(IPC.terminalExit, cb),
   },
   menu: {
+    inAppMenuBar: process.platform !== 'darwin',
+    popup: (request: MenuPopupRequest) =>
+      ipcRenderer.invoke(IPC.menuPopup, request) as Promise<{ ok: boolean }>,
     onCommand: (cb: (commandId: string) => void) =>
       on<{ commandId: string }>(IPC.menuCommand, ({ commandId }) => cb(commandId)),
   },

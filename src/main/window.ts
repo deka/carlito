@@ -2,6 +2,7 @@ import { BrowserWindow, app, nativeTheme } from 'electron';
 import { join } from 'node:path';
 import { IPC } from '@shared/ipc';
 import { registerWindowWorkspace } from './ipc/file-handlers';
+import { useInAppMenuBar } from './menu';
 import {
   forgetWindowCloseState,
   requestWindowCloseConfirmation,
@@ -35,6 +36,8 @@ export function createWindow(options: CreateWindowOptions = {}): BrowserWindow {
     return { action: 'deny' };
   });
 
+  // The menu is drawn in the renderer title bar; accelerators still work while hidden.
+  if (useInAppMenuBar) win.setMenuBarVisibility(false);
   registerWindowWorkspace(win, options.initialWorkspacePath);
   const webContentsId = win.webContents.id;
 
