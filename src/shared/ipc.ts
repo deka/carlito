@@ -34,6 +34,7 @@ export const IPC = {
   windowCloseCancel: 'window:closeCancel',
   dialogUnsavedChanges: 'dialog:unsavedChanges',
   menuCommand: 'menu:command',
+  menuPopup: 'menu:popup',
   themeOsChanged: 'theme:osChanged',
   lspStart: 'lsp:start',
   lspStop: 'lsp:stop',
