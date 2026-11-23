@@ -733,3 +733,51 @@
 .monaco-editor .find-widget .monaco-sash {
   background: var(--border) !important;
 }
+
+.image-preview {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  height: 100%;
+  min-width: 0;
+  min-height: 0;
+  background: var(--bg);
+  color: var(--fg);
+}
+
+.image-preview-body {
+  display: flex;
+  min-width: 0;
+  min-height: 0;
+  overflow: auto;
+  padding: 24px;
+}
+
+.image-preview-image {
+  max-width: 100%;
+  max-height: 100%;
+  margin: auto;
+  object-fit: contain;
+  cursor: zoom-in;
+  /* Checkerboard so transparent pixels stay visible on any theme. */
+  background-color: #fff;
+  background-image:
+    linear-gradient(45deg, #d8d8d8 25%, transparent 25%),
+    linear-gradient(-45deg, #d8d8d8 25%, transparent 25%),
+    linear-gradient(45deg, transparent 75%, #d8d8d8 75%),
+    linear-gradient(-45deg, transparent 75%, #d8d8d8 75%);
+  background-size: 16px 16px;
+  background-position: 0 0, 0 8px, 8px -8px, -8px 0;
+  box-shadow: 0 0 0 1px var(--border-subtle);
+  image-rendering: auto;
+}
+
+.image-preview-body.actual-size .image-preview-image {
+  max-width: none;
+  max-height: none;
+  cursor: zoom-out;
+}
+
+.image-preview-error {
+  margin: auto;
+  color: var(--muted);
+}

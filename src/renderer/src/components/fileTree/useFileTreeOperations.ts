@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import type { FormEvent } from 'react';
 import type { FileOperationResult, FileTreeNode, WorkspaceFolderResult } from '@shared/file-types';
+import { isBinaryImagePath } from '@shared/image-types';
 import { languageIdFromPath } from '@shared/language-registry';
 import { useEditorStore } from '../../store/useEditorStore';
 import type { useWorkspaceTree } from './useWorkspaceTree';
@@ -33,6 +34,12 @@ export function useFileTreeOperations({
   }, [createPrompt]);
 
   async function openNode(node: FileTreeNode): Promise<void> {
+    if (isBinaryImagePath(node.path)) {
+      useEditorStore
+        .getState()
+        .openFile({ uri: node.uri, path: node.path, languageId: 'plaintext', title: titleFromPath(node.path) });
+      return;
+    }
     const languageId = languageIdFromPath(node.path);
     const [file, { getOrCreateModel }] = await Promise.all([
       window.api.file.read(node.path),

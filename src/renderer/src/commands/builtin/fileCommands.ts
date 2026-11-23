@@ -1,3 +1,4 @@
+import { isBinaryImagePath } from '@shared/image-types';
 import { getEditor } from '../../editor/editorRegistry';
 import { getModel, getOrCreateModel } from '../../editor/models';
 import { closeTabWithPrompt, saveActiveTab, saveAllTabs } from '../../editor/saveActions';
@@ -26,7 +27,8 @@ function newFile(): void {
 async function openFile(): Promise<void> {
   const file = await window.api.file.openDialog();
   if (!file) return;
-  getOrCreateModel(file.uri, file.content, file.languageId);
+  const image = isBinaryImagePath(file.path);
+  if (!image) getOrCreateModel(file.uri, file.content, file.languageId);
   if (!useEditorStore.getState().workspace) {
     useEditorStore.getState().setWorkspace(rootFor(file.path));
   }
@@ -37,6 +39,7 @@ async function openFile(): Promise<void> {
     languageId: file.languageId,
     title: titleFromPath(file.path),
   });
+  if (image) return;
   await ensureLanguageClient(file.languageId, rootUri, file.uri).catch((error) => console.error(error));
 }
 
@@ -48,12 +51,15 @@ async function saveAs(): Promise<void> {
   const tab = activeTab();
   if (!tab || isTerminalUri(tab.uri)) return;
   flushRichEdits(tab.uri);
-  const content = getModel(tab.uri)?.getValue() ?? '';
+  const model = getModel(tab.uri);
+  // Image previews have no text model; don't write an empty copy.
+  if (!model && !tab.uri.startsWith('untitled:')) return;
+  const content = model?.getValue() ?? '';
   const result = await window.api.file.saveAsDialog({ content, suggestedName: tab.title });
   if (!result) return;
   const { replaceModelUri } = await import('../../editor/models');
-  const model = replaceModelUri(tab.uri, result.uri, content, result.languageId);
-  getEditor()?.setModel(model);
+  const nextModel = replaceModelUri(tab.uri, result.uri, content, result.languageId);
+  getEditor()?.setModel(nextModel);
   useEditorStore.getState().markSaved(tab.uri, result);
 }
 

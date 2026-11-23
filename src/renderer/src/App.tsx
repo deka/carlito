@@ -20,6 +20,7 @@ import { isMarkdownPreviewUri } from './markdown/previewTabs';
 import { useIsMarkdownPreviewed, useMarkdownViewStore } from './markdown/markdownViewStore';
 import type { EditorTab } from './store/useEditorStore';
 import { isTerminalUri } from './terminal/terminalTabs';
+import { isBinaryImagePath } from '@shared/image-types';
 
 const activityBarWidth = 48;
 const MonacoEditor = lazy(() =>
@@ -30,6 +31,7 @@ const GitDiffEditor = lazy(() =>
 );
 const TerminalView = lazy(() => import('./components/TerminalView').then((module) => ({ default: module.TerminalView })));
 const MarkdownPreview = lazy(() => import('./components/MarkdownPreview').then((module) => ({ default: module.MarkdownPreview })));
+const ImagePreview = lazy(() => import('./components/ImagePreview').then((module) => ({ default: module.ImagePreview })));
 const MarkdownRichEditor = lazy(() =>
   import('./components/MarkdownRichEditor').then((module) => ({ default: module.MarkdownRichEditor })),
 );
@@ -152,6 +154,10 @@ export function App() {
                 ) : tab && isMarkdownPreviewUri(tab.uri) ? (
                   <Suspense fallback={<div className="editor-stack" />}>
                     <MarkdownPreview groupId={group.id} />
+                  </Suspense>
+                ) : tab && tab.uri.startsWith('file:') && isBinaryImagePath(tab.path) ? (
+                  <Suspense fallback={<div className="editor-stack" />}>
+                    <ImagePreview groupId={group.id} />
                   </Suspense>
                 ) : hasActiveTab || warmEditor ? (
                   <Suspense

@@ -37,7 +37,7 @@ export function markdownExternalImageUrl(value: string): string | undefined {
 }
 
 export function isSafeResolvedMarkdownImageUrl(value: string): boolean {
-  if (/^data:image\/(?:apng|avif|gif|jpeg|png|svg\+xml|webp);base64,[a-z0-9+/]+=*$/i.test(value))
+  if (/^data:image\/(?:apng|avif|bmp|gif|jpeg|png|svg\+xml|webp|x-icon);base64,[a-z0-9+/]+=*$/i.test(value))
     return true;
   return Boolean(markdownLocalResourceUrl(value));
 }
