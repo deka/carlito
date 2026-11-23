@@ -6,6 +6,7 @@ import { activeTab, useEditorStore } from '../../store/useEditorStore';
 import { registerCommand } from '../registry';
 import { rootFor, titleFromPath } from './pathUtils';
 import { isTerminalUri } from '../../terminal/terminalTabs';
+import { flushRichEdits } from '../../markdown/pendingRichEdits';
 
 function nextUntitledTitle(): string {
   const tabs = useEditorStore.getState().tabs;
@@ -46,6 +47,7 @@ async function saveFile(): Promise<void> {
 async function saveAs(): Promise<void> {
   const tab = activeTab();
   if (!tab || isTerminalUri(tab.uri)) return;
+  flushRichEdits(tab.uri);
   const content = getModel(tab.uri)?.getValue() ?? '';
   const result = await window.api.file.saveAsDialog({ content, suggestedName: tab.title });
   if (!result) return;

@@ -5,6 +5,7 @@ import { activeTab, isUriOpen, useEditorStore } from '../store/useEditorStore';
 import { disposeModel, getModel, replaceModelUri } from './models';
 import { invalidateGitBaseline } from './gitGutter';
 import { isTerminalUri } from '../terminal/terminalTabs';
+import { flushAllRichEdits, flushRichEdits } from '../markdown/pendingRichEdits';
 
 async function organizeImports(tab: EditorTab): Promise<void> {
   const model = getModel(tab.uri);
@@ -76,6 +77,7 @@ async function runActiveTabSaveActions(tab: EditorTab): Promise<void> {
 export async function saveTab(tab: EditorTab): Promise<void> {
   // Terminal tabs have no content to save.
   if (isTerminalUri(tab.uri)) return;
+  flushRichEdits(tab.uri);
   const model = getModel(tab.uri);
   const content = model?.getValue() ?? '';
   if (tab.uri.startsWith('untitled:')) {
@@ -104,13 +106,19 @@ export async function saveActiveTab(): Promise<void> {
 }
 
 export async function saveAllTabs(): Promise<void> {
+  flushAllRichEdits();
   const dirtyTabs = useEditorStore.getState().tabs.filter((tab) => tab.dirty);
   for (const tab of dirtyTabs) {
     await saveTab(tab);
   }
 }
 
-export async function promptToSaveTab(tab: EditorTab): Promise<'saved' | 'discarded' | 'cancelled'> {
+export async function promptToSaveTab(
+  staleTab: EditorTab,
+): Promise<'saved' | 'discarded' | 'cancelled'> {
+  // Pending rich markdown edits may mark the tab dirty; re-read it afterwards.
+  flushRichEdits(staleTab.uri);
+  const tab = useEditorStore.getState().tabs.find((candidate) => candidate.id === staleTab.id) ?? staleTab;
   if (!tab.dirty) return 'discarded';
   const choice = await window.api.dialog.unsavedChanges(tab.title);
   if (choice === 'cancel') return 'cancelled';
@@ -150,6 +158,7 @@ export async function closeTabWithPrompt(
 }
 
 export async function handleWindowCloseRequest(): Promise<void> {
+  flushAllRichEdits();
   for (const tab of useEditorStore.getState().tabs.filter((candidate) => candidate.dirty)) {
     const result = await promptToSaveTab(tab);
     if (result === 'cancelled') {
