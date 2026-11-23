@@ -1,6 +1,7 @@
 import type { EditorTab } from '../store/useEditorStore';
 import { isMarkdownTab } from '../markdown/previewTabs';
-import { canToggleMarkdownPreview, useIsMarkdownPreviewed, useMarkdownViewStore } from '../markdown/markdownViewStore';
+import { inlinePreviewFor } from '../preview/inlinePreviews';
+import { useInlinePreviewStore, useIsInlinePreviewed } from '../preview/inlinePreviewStore';
 import { runCommand } from '../commands/registry';
 import { relativePath } from '../commands/builtin/pathUtils';
 import type { TabContextMenuState } from './TabContextMenuState';
@@ -32,7 +33,9 @@ export function TabContextMenu({
   const tabsToRight = contextTabIndex >= 0 ? groupTabs.slice(contextTabIndex + 1) : [];
   const otherTabs = groupTabs.filter((tab) => tab.id !== contextMenu.tab.id);
   const savedTabs = groupTabs.filter((tab) => !tab.dirty);
-  const previewed = useIsMarkdownPreviewed(groupId, contextMenu.tab);
+  const previewed = useIsInlinePreviewed(groupId, contextMenu.tab);
+  const inlinePreview = inlinePreviewFor(contextMenu.tab);
+  const hasPreviewActions = isMarkdownTab(contextMenu.tab) || inlinePreview !== undefined;
 
   return (
     <div
@@ -42,23 +45,19 @@ export function TabContextMenu({
       onContextMenu={(event) => event.preventDefault()}
     >
       {isMarkdownTab(contextMenu.tab) ? (
-        <>
-          <button type="button" onClick={() => onRunAction(() => runCommand('markdown.showPreviewToSide'))}>
-            Open Markdown Preview to Side
-          </button>
-          {canToggleMarkdownPreview(contextMenu.tab) ? (
-            <button
-              type="button"
-              onClick={() =>
-                onRunAction(() => useMarkdownViewStore.getState().togglePreview(groupId, contextMenu.tab.id))
-              }
-            >
-              {previewed ? 'Show Markdown Source' : 'Show Markdown Preview'}
-            </button>
-          ) : null}
-          <div className="tab-context-separator" />
-        </>
+        <button type="button" onClick={() => onRunAction(() => runCommand('markdown.showPreviewToSide'))}>
+          Open Markdown Preview to Side
+        </button>
       ) : null}
+      {inlinePreview ? (
+        <button
+          type="button"
+          onClick={() => onRunAction(() => useInlinePreviewStore.getState().togglePreview(groupId, contextMenu.tab))}
+        >
+          {`Show ${inlinePreview.label} ${previewed ? 'Source' : 'Preview'}`}
+        </button>
+      ) : null}
+      {hasPreviewActions ? <div className="tab-context-separator" /> : null}
       <button type="button" onClick={() => onRunAction(() => onCloseTabsWithPrompt([contextMenu.tab]))}>
         Close
       </button>

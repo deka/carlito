@@ -3,7 +3,7 @@ import { softWrapEnabled } from '../../editor/editorOptions';
 import { getModel } from '../../editor/models';
 import { navigateBack, navigateForward } from '../../editor/navigationHistory';
 import { ensureLanguageClient } from '../../lsp/LanguageClientService';
-import { canToggleMarkdownPreview, useMarkdownViewStore } from '../../markdown/markdownViewStore';
+import { canToggleInlinePreview, useInlinePreviewStore } from '../../preview/inlinePreviewStore';
 import { isMarkdownTab, markdownPreviewUri } from '../../markdown/previewTabs';
 import { activeTab, useEditorStore } from '../../store/useEditorStore';
 import { useSettingsStore } from '../../store/useSettingsStore';
@@ -61,12 +61,12 @@ function openMarkdownPreviewToSide(): void {
   });
 }
 
-function toggleMarkdownPreview(): void {
+function toggleInlinePreview(): void {
   const tab = activeTab();
   // Silent no-op elsewhere: the shortcut also fires from terminals and other tabs.
-  if (!canToggleMarkdownPreview(tab)) return;
+  if (!canToggleInlinePreview(tab)) return;
   const groupId = useEditorStore.getState().activeGroupId;
-  useMarkdownViewStore.getState().togglePreview(groupId, tab.id);
+  useInlinePreviewStore.getState().togglePreview(groupId, tab);
 }
 
 async function runEditorAction(actionId: string): Promise<void> {
@@ -134,9 +134,9 @@ export function registerEditorCommands(): void {
   });
   registerCommand({
     id: 'markdown.togglePreview',
-    title: 'Markdown: Toggle Preview',
+    title: 'Toggle Preview (Markdown, SVG)',
     keybinding: 'Ctrl+Alt+V',
-    run: toggleMarkdownPreview,
+    run: toggleInlinePreview,
   });
   registerCommand({
     id: 'workbench.action.navigateBack',

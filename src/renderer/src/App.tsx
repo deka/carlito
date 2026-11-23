@@ -1,4 +1,4 @@
-import { lazy, Suspense, useEffect, useRef, useState } from 'react';
+import { lazy, Suspense, useEffect, useState } from 'react';
 import { ActivityBar } from './components/ActivityBar';
 import { AppTitleBar } from './components/AppTitleBar';
 import { FileTree } from './components/FileTree';
@@ -7,6 +7,7 @@ import { SettingsPanel } from './components/SettingsPanel';
 import { StatusBar } from './components/StatusBar';
 import { TabBar } from './components/TabBar';
 import { WelcomeScreen } from './components/WelcomeScreen';
+import { InlinePreview } from './components/preview/InlinePreviewOverlay';
 import { ensureVscodeServices, loadAfterVscodeServices } from './vscode/servicesReady';
 import { useKeybindings } from './hooks/useKeybindings';
 import { useSidebarResize } from './hooks/useSidebarResize';
@@ -17,8 +18,6 @@ import { useThemeStore } from './store/useThemeStore';
 import { useWorkbenchUiStore } from './store/useWorkbenchUiStore';
 import { isGitDiffUri } from './git/diffTabs';
 import { isMarkdownPreviewUri } from './markdown/previewTabs';
-import { useIsMarkdownPreviewed, useMarkdownViewStore } from './markdown/markdownViewStore';
-import type { EditorTab } from './store/useEditorStore';
 import { isTerminalUri } from './terminal/terminalTabs';
 import { isBinaryImagePath } from '@shared/image-types';
 
@@ -31,48 +30,9 @@ const GitDiffEditor = lazy(() =>
 );
 const TerminalView = lazy(() => import('./components/TerminalView').then((module) => ({ default: module.TerminalView })));
 const MarkdownPreview = lazy(() => import('./components/MarkdownPreview').then((module) => ({ default: module.MarkdownPreview })));
-const ImagePreview = lazy(() => import('./components/ImagePreview').then((module) => ({ default: module.ImagePreview })));
-const MarkdownRichEditor = lazy(() =>
-  import('./components/MarkdownRichEditor').then((module) => ({ default: module.MarkdownRichEditor })),
+const ImagePreview = lazy(() =>
+  import('./components/preview/ImagePreview').then((module) => ({ default: module.ImagePreview })),
 );
-
-/** Editable formatted view laid over the (still mounted) source editor of a markdown tab. */
-function InlineMarkdownPreview({ groupId, tab }: { groupId: string; tab: EditorTab | undefined }) {
-  const previewed = useIsMarkdownPreviewed(groupId, tab);
-  if (!previewed || !tab) return null;
-  return <MarkdownPreviewOverlay groupId={groupId} tab={tab} />;
-}
-
-function MarkdownPreviewOverlay({ groupId, tab }: { groupId: string; tab: EditorTab }) {
-  const overlayRef = useRef<HTMLDivElement | null>(null);
-
-  useEffect(() => {
-    const overlay = overlayRef.current;
-    // Take focus away from the hidden source editor so typing cannot edit it.
-    const focused = document.activeElement;
-    if (focused instanceof HTMLElement && overlay?.parentElement?.contains(focused)) focused.blur();
-    overlay?.focus({ preventScroll: true });
-    return () => {
-      const current = document.activeElement;
-      if (current && current !== document.body && !overlay?.contains(current)) return;
-      void import('./editor/editorRegistry')
-        .then(({ getEditorForGroup }) => getEditorForGroup(groupId)?.focus())
-        .catch(console.error);
-    };
-  }, [groupId, tab.id]);
-
-  return (
-    <div className="markdown-preview-overlay" ref={overlayRef} tabIndex={-1}>
-      <Suspense fallback={null}>
-        <MarkdownRichEditor
-          groupId={groupId}
-          tab={tab}
-          onShowSource={() => useMarkdownViewStore.getState().togglePreview(groupId, tab.id)}
-        />
-      </Suspense>
-    </div>
-  );
-}
 
 export function App() {
   useKeybindings();
@@ -169,7 +129,7 @@ export function App() {
                   >
                     <MonacoEditor groupId={group.id}>
                       {!hasActiveTab ? <WelcomeScreen /> : null}
-                      <InlineMarkdownPreview groupId={group.id} tab={tab} />
+                      <InlinePreview groupId={group.id} tab={tab} />
                     </MonacoEditor>
                   </Suspense>
                 ) : (

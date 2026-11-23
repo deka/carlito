@@ -532,9 +532,9 @@ function RichEditorSurface({
   if (error) {
     return (
       <div className="markdown-preview">
-        <div className="markdown-preview-toolbar">
+        <div className="preview-toolbar">
           <span>Formatted</span>
-          <button type="button" className="markdown-preview-action" onClick={onShowSource}>
+          <button type="button" className="preview-action" onClick={onShowSource}>
             Show Source
           </button>
         </div>
@@ -547,7 +547,7 @@ function RichEditorSurface({
 
   return (
     <div className="markdown-preview markdown-rich">
-      <div className="markdown-preview-toolbar markdown-rich-toolbar">
+      <div className="preview-toolbar markdown-rich-toolbar">
         <select
           className="markdown-rich-select"
           title="Block type"
@@ -613,7 +613,7 @@ function RichEditorSurface({
             onBlur={() => setLinkDraft(undefined)}
           />
         ) : null}
-        <button type="button" className="markdown-preview-action" onClick={onShowSource}>
+        <button type="button" className="preview-action" onClick={onShowSource}>
           Show Source
         </button>
       </div>
