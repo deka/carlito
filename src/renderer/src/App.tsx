@@ -30,8 +30,11 @@ const GitDiffEditor = lazy(() =>
 );
 const TerminalView = lazy(() => import('./components/TerminalView').then((module) => ({ default: module.TerminalView })));
 const MarkdownPreview = lazy(() => import('./components/MarkdownPreview').then((module) => ({ default: module.MarkdownPreview })));
+const MarkdownRichEditor = lazy(() =>
+  import('./components/MarkdownRichEditor').then((module) => ({ default: module.MarkdownRichEditor })),
+);
 
-/** Formatted view laid over the (still mounted) source editor of a markdown tab. */
+/** Editable formatted view laid over the (still mounted) source editor of a markdown tab. */
 function InlineMarkdownPreview({ groupId, tab }: { groupId: string; tab: EditorTab | undefined }) {
   const previewed = useIsMarkdownPreviewed(groupId, tab);
   if (!previewed || !tab) return null;
@@ -59,8 +62,9 @@ function MarkdownPreviewOverlay({ groupId, tab }: { groupId: string; tab: Editor
   return (
     <div className="markdown-preview-overlay" ref={overlayRef} tabIndex={-1}>
       <Suspense fallback={null}>
-        <MarkdownPreview
+        <MarkdownRichEditor
           groupId={groupId}
+          tab={tab}
           onShowSource={() => useMarkdownViewStore.getState().togglePreview(groupId, tab.id)}
         />
       </Suspense>
