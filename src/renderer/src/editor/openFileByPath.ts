@@ -1,3 +1,4 @@
+import { isBinaryImagePath } from '@shared/image-types';
 import { languageIdFromPath } from '@shared/language-registry';
 import { titleFromPath } from '../commands/builtin/pathUtils';
 import { useEditorStore } from '../store/useEditorStore';
@@ -5,6 +6,10 @@ import { fileUriFromPath } from '../utils/uriUtils';
 import { loadAfterVscodeServices } from '../vscode/servicesReady';
 
 export async function openFileByPath(path: string, uri = fileUriFromPath(path)): Promise<void> {
+  if (isBinaryImagePath(path)) {
+    useEditorStore.getState().openFile({ uri, path, languageId: 'plaintext', title: titleFromPath(path) });
+    return;
+  }
   const languageId = languageIdFromPath(path);
   const { getModel, getOrCreateModel } = await loadAfterVscodeServices(() => import('./models'));
   if (!getModel(uri)) {

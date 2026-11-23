@@ -1,6 +1,7 @@
 import { getService, IQuickInputService } from '@codingame/monaco-vscode-api/services';
 import type { IQuickPickItem } from '@codingame/monaco-vscode-api/vscode/vs/platform/quickinput/common/quickInput';
 import type { FileTreeNode } from '@shared/file-types';
+import { isBinaryImagePath } from '@shared/image-types';
 import { languageIdFromPath } from '@shared/language-registry';
 import { getOrCreateModel } from '../editor/models';
 import { ensureLanguageClient } from '../lsp/LanguageClientService';
@@ -41,6 +42,10 @@ function flatten(nodes: FileTreeNode[], rootPath: string): QuickOpenItem[] {
 }
 
 async function openFile(item: QuickOpenItem): Promise<void> {
+  if (isBinaryImagePath(item.path)) {
+    useEditorStore.getState().openFile({ uri: item.uri, path: item.path, languageId: 'plaintext', title: titleFromPath(item.path) });
+    return;
+  }
   const workspace = useEditorStore.getState().workspace;
   const languageId = languageIdFromPath(item.path);
   const file = await window.api.file.read(item.path);

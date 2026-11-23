@@ -1,8 +1,9 @@
 import { dialog, ipcMain, shell } from 'electron';
 import { cp, mkdir, open, readFile, rename, rm, stat, writeFile } from 'node:fs/promises';
-import { basename, dirname, extname, join } from 'node:path';
+import { basename, dirname, join } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { IPC } from '@shared/ipc';
+import { imageMimeTypeForPath, isBinaryImagePath } from '@shared/image-types';
 import { languageIdFromPath } from '@shared/language-registry';
 import {
   assertSafeChildName,
@@ -39,25 +40,10 @@ import type {
 
 export { registerWindowWorkspace } from './workspace-state';
 
-const imageMimeTypes: Record<string, string> = {
-  '.apng': 'image/apng',
-  '.avif': 'image/avif',
-  '.gif': 'image/gif',
-  '.jpg': 'image/jpeg',
-  '.jpeg': 'image/jpeg',
-  '.png': 'image/png',
-  '.svg': 'image/svg+xml',
-  '.webp': 'image/webp',
-};
-
 const maxImageFileSize = 10 * 1024 * 1024;
 
-function mimeTypeForPath(path: string): string | undefined {
-  return imageMimeTypes[extname(path).toLowerCase()];
-}
-
 async function readImageDataUrl(path: string): Promise<string> {
-  const mimeType = mimeTypeForPath(path);
+  const mimeType = imageMimeTypeForPath(path);
   if (!mimeType) throw new Error('Unsupported image type');
 
   const file = await open(path, 'r');
@@ -80,7 +66,8 @@ export function registerFileHandlers(): void {
     const result = await dialog.showOpenDialog(win, { properties: ['openFile'] });
     if (result.canceled || result.filePaths.length === 0) return null;
     const path = result.filePaths[0]!;
-    const content = await readFile(path, 'utf8');
+    // Images are previewed from a data URL; never decode their bytes as text.
+    const content = isBinaryImagePath(path) ? '' : await readFile(path, 'utf8');
     await registerAllowedFile(win, path);
     return {
       uri: pathToFileURL(path).toString(),
@@ -100,8 +87,12 @@ export function registerFileHandlers(): void {
   });
 
   ipcMain.handle(IPC.fileReadDataUrl, async (event, { path }: ReadFileRequest) => {
-    const authorizedPath = await authorizeWindowPath(windowFromEvent(event), path);
-    return { dataUrl: await readImageDataUrl(authorizedPath) };
+    const win = windowFromEvent(event);
+    const authorizedPath = await authorizeWindowPath(win, path);
+    const dataUrl = await readImageDataUrl(authorizedPath);
+    // Refresh image previews when the file changes on disk.
+    watchWorkspaceDirectory(win, dirname(authorizedPath));
+    return { dataUrl };
   });
 
   ipcMain.handle(IPC.fileSave, async (event, { path, content }: SaveFileRequest) => {

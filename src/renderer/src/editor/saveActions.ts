@@ -79,6 +79,9 @@ export async function saveTab(tab: EditorTab): Promise<void> {
   if (isTerminalUri(tab.uri)) return;
   flushRichEdits(tab.uri);
   const model = getModel(tab.uri);
+  // Tabs without a text model (image previews) have nothing to write: saving
+  // an empty string would truncate the file on disk.
+  if (!model && !tab.uri.startsWith('untitled:')) return;
   const content = model?.getValue() ?? '';
   if (tab.uri.startsWith('untitled:')) {
     const result = await window.api.file.saveAsDialog({ content, suggestedName: tab.title });
