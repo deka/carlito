@@ -3,7 +3,8 @@ import { disposeModel } from '../editor/models';
 import type { EditorTab } from '../store/useEditorStore';
 import { isUriOpen, useEditorStore } from '../store/useEditorStore';
 import { useContextMenuDismiss } from '../hooks/useContextMenuDismiss';
-import { canToggleMarkdownPreview, useIsMarkdownPreviewed, useMarkdownViewStore } from '../markdown/markdownViewStore';
+import { inlinePreviewFor } from '../preview/inlinePreviews';
+import { useInlinePreviewStore, useIsInlinePreviewed } from '../preview/inlinePreviewStore';
 import { Tab } from './Tab';
 import { TabContextMenu } from './TabContextMenu';
 import type { TabContextMenuState } from './TabContextMenuState';
@@ -59,7 +60,8 @@ export function TabBar({ groupId }: Props) {
     : [];
 
   const activeGroupTab = groupTabs.find((tab) => tab.id === group?.activeTabId);
-  const markdownPreviewed = useIsMarkdownPreviewed(groupId, activeGroupTab);
+  const previewed = useIsInlinePreviewed(groupId, activeGroupTab);
+  const inlinePreview = inlinePreviewFor(activeGroupTab);
 
   useContextMenuDismiss(contextMenu !== undefined, () => setContextMenu(undefined));
 
@@ -205,19 +207,19 @@ export function TabBar({ groupId }: Props) {
         onDragOver={showEndDropTarget}
         onDrop={(event) => dropTab(event, groupTabs.length)}
       />
-      {canToggleMarkdownPreview(activeGroupTab) ? (
+      {inlinePreview && activeGroupTab ? (
         <button
-          className={`markdown-toggle ${markdownPreviewed ? 'active' : ''}`}
+          className={`preview-toggle ${previewed ? 'active' : ''}`}
           type="button"
-          title={markdownPreviewed ? 'Show Source (Ctrl+Alt+V)' : 'Show Preview (Ctrl+Alt+V)'}
-          aria-label={markdownPreviewed ? 'Show Markdown Source' : 'Show Markdown Preview'}
-          aria-pressed={markdownPreviewed}
+          title={previewed ? 'Show Source (Ctrl+Alt+V)' : 'Show Preview (Ctrl+Alt+V)'}
+          aria-label={`Show ${inlinePreview.label} ${previewed ? 'Source' : 'Preview'}`}
+          aria-pressed={previewed}
           onClick={() => {
             setActiveGroup(groupId);
-            useMarkdownViewStore.getState().togglePreview(groupId, activeGroupTab.id);
+            useInlinePreviewStore.getState().togglePreview(groupId, activeGroupTab);
           }}
         >
-          {markdownPreviewed ? (
+          {previewed ? (
             <svg viewBox="0 0 16 16" aria-hidden="true">
               <path d="M5.5 4.5 2 8l3.5 3.5M10.5 4.5 14 8l-3.5 3.5" />
             </svg>

@@ -114,11 +114,11 @@ export function MarkdownPreview({ groupId, onShowSource }: Props) {
 
   return (
     <div className="markdown-preview">
-      <div className="markdown-preview-toolbar">
+      <div className="preview-toolbar">
         <span>Preview</span>
-        <span className="markdown-preview-path">{tab.path}</span>
+        <span className="preview-path">{tab.path}</span>
         {onShowSource ? (
-          <button type="button" className="markdown-preview-action" onClick={onShowSource}>
+          <button type="button" className="preview-action" onClick={onShowSource}>
             Show Source
           </button>
         ) : null}
