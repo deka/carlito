@@ -356,6 +356,8 @@ function RichEditorSurface({
               mousedown: (view, event) => {
                 // The task checkbox is the li's ::before marker: a click on the li itself.
                 const target = event.target;
+                // Only a primary click toggles: right/middle clicks must not edit the file.
+                if (event.button !== 0) return false;
                 if (!(target instanceof HTMLElement) || !target.matches('li[data-item-type="task"]')) return false;
                 const inside = view.posAtDOM(target, 0);
                 const $pos = view.state.doc.resolve(inside);

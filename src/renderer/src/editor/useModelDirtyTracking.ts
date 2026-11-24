@@ -2,7 +2,7 @@ import { useEffect } from 'react';
 import type * as monaco from '@codingame/monaco-vscode-editor-api';
 import { useEditorStore } from '../store/useEditorStore';
 import { refreshVisibleGitGuttersForUri } from './editorRegistry';
-import { getModel, isApplyingExternalContentUpdate } from './models';
+import { getModel, isApplyingExternalContentUpdate, isModelDirty } from './models';
 
 interface ModelTracker {
   listener: monaco.IDisposable;
@@ -36,7 +36,10 @@ function syncTrackers(): void {
     const uri = tab.uri;
     const tracker: ModelTracker = {
       listener: model.onDidChangeContent(() => {
-        if (!isApplyingExternalContentUpdate(model)) useEditorStore.getState().markDirty(uri);
+        // A disk reload marks the model saved right after applying it.
+        if (!isApplyingExternalContentUpdate(model)) {
+          useEditorStore.getState().setDirty(uri, isModelDirty(model));
+        }
         if (tracker.gitTimer) clearTimeout(tracker.gitTimer);
         tracker.gitTimer = setTimeout(() => {
           tracker.gitTimer = undefined;
@@ -47,6 +50,8 @@ function syncTrackers(): void {
       gitTimer: undefined,
     };
     trackers.set(model, tracker);
+    // Changes made while nothing was tracking (or a reopened tab) still count.
+    useEditorStore.getState().setDirty(uri, isModelDirty(model));
   }
 
   for (const model of trackers.keys()) {

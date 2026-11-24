@@ -57,8 +57,9 @@ async function saveAs(): Promise<void> {
   const content = model?.getValue() ?? '';
   const result = await window.api.file.saveAsDialog({ content, suggestedName: tab.title });
   if (!result) return;
-  const { replaceModelUri } = await import('../../editor/models');
+  const { markModelSaved, replaceModelUri } = await import('../../editor/models');
   const nextModel = replaceModelUri(tab.uri, result.uri, content, result.languageId);
+  markModelSaved(nextModel);
   getEditor()?.setModel(nextModel);
   useEditorStore.getState().markSaved(tab.uri, result);
 }
