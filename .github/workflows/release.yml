@@ -91,11 +91,36 @@ jobs:
     permissions:
       contents: write
     steps:
+      # Full history and tags, to list the commits since the previous release.
+      - name: Check out
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
       - name: Download packages
         uses: actions/download-artifact@v8
         with:
           name: carlo-linux-x64
           path: dist
+
+      # One line per commit since the previous release tag (merge commits of
+      # the dev -> main PRs are skipped), instead of GitHub's one line per PR.
+      - name: Write release notes
+        env:
+          GH_REPO: ${{ github.repository }}
+          VERSION: ${{ needs.linux.outputs.version }}
+        run: |
+          notes="$RUNNER_TEMP/notes.md"
+          prev=$(git describe --tags --abbrev=0 --match 'v*' "$GITHUB_SHA^" 2>/dev/null || true)
+          {
+            echo "## What's Changed"
+            git log --no-merges --format='* %s (%h)' "${prev:+$prev..}$GITHUB_SHA"
+            if [ -n "$prev" ]; then
+              echo
+              echo "**Full Changelog**: https://github.com/$GH_REPO/compare/$prev...v$VERSION"
+            fi
+          } > "$notes"
+          cat "$notes"
 
       - name: Create release
         env:
@@ -111,5 +136,5 @@ jobs:
             gh release create "$tag" dist/* \
               --target "$GITHUB_SHA" \
               --title "Carlo $VERSION" \
-              --generate-notes
+              --notes-file "$RUNNER_TEMP/notes.md"
           fi
