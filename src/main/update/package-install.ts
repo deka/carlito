@@ -21,9 +21,48 @@ export interface ReleaseAsset {
   url: string;
 }
 
+/** The app passes Electron's `net.fetch`; plain Node falls back to the global `fetch`. */
+export type FetchImpl = (url: string, init?: RequestInit) => Promise<Response>;
+
+/** Time allowed to connect and receive the response headers (the body may take longer). */
+const HEADERS_TIMEOUT_MS = 30_000;
+
+/**
+ * Fetches `url`, aborting if the headers take too long, and retries once on a network-level
+ * failure (DNS, connect, TLS, reset). HTTP error statuses are returned, never retried.
+ */
+async function fetchAsset(fetchImpl: FetchImpl, url: string): Promise<Response> {
+  for (let attempt = 1; ; attempt++) {
+    const controller = new AbortController();
+    const timer = setTimeout(
+      () => controller.abort(new Error('Timed out waiting for the server.')),
+      HEADERS_TIMEOUT_MS,
+    );
+    try {
+      return await fetchImpl(url, {
+        headers: { 'User-Agent': 'carlo-update-check' },
+        signal: controller.signal,
+      });
+    } catch (error) {
+      if (attempt >= 2) throw error;
+    } finally {
+      clearTimeout(timer);
+    }
+  }
+}
+
 /** Streams `asset` to `destination` and returns its SHA-256 (hex). */
-export async function download(asset: ReleaseAsset, destination: string): Promise<string> {
-  const response = await fetch(asset.url, { headers: { 'User-Agent': 'carlo-update-check' } });
+export async function download(
+  asset: ReleaseAsset,
+  destination: string,
+  fetchImpl: FetchImpl = fetch,
+): Promise<string> {
+  let response: Response;
+  try {
+    response = await fetchAsset(fetchImpl, asset.url);
+  } catch (error) {
+    throw new Error(`Download of ${asset.name} failed: ${describeError(error)}`, { cause: error });
+  }
   if (!response.ok || !response.body) {
     throw new Error(`Download of ${asset.name} failed: ${response.status} ${response.statusText}`);
   }
@@ -41,16 +80,38 @@ export async function download(asset: ReleaseAsset, destination: string): Promis
   return hash.digest('hex');
 }
 
+/** An error message including its cause: Node's `fetch` hides the real reason in `cause`. */
+export function describeError(error: unknown): string {
+  if (!(error instanceof Error)) return String(error);
+  const cause = error.cause;
+  if (cause instanceof Error) {
+    const code = (cause as NodeJS.ErrnoException).code;
+    const detail = [code, cause.message].filter(Boolean).join(' ');
+    if (detail && !error.message.includes(detail)) return `${error.message} (${detail})`;
+  }
+  return error.message;
+}
+
 /** Checks the package name, version and architecture recorded in the .deb itself. */
 export async function verifyPackage(debPath: string, version: string): Promise<void> {
-  const { stdout } = await execFileAsync('dpkg-deb', ['-f', debPath, 'Package', 'Version', 'Architecture']);
+  const { stdout } = await execFileAsync('dpkg-deb', [
+    '-f',
+    debPath,
+    'Package',
+    'Version',
+    'Architecture',
+  ]);
   const fields = Object.fromEntries(
     stdout
       .split('\n')
       .map((line) => line.split(/:\s*/, 2))
       .filter((parts) => parts.length === 2),
   );
-  if (fields.Package !== PACKAGE_NAME || fields.Version !== version || fields.Architecture !== 'amd64') {
+  if (
+    fields.Package !== PACKAGE_NAME ||
+    fields.Version !== version ||
+    fields.Architecture !== 'amd64'
+  ) {
     throw new Error(
       `Unexpected package metadata: ${fields.Package} ${fields.Version} ${fields.Architecture}.`,
     );
@@ -64,13 +125,14 @@ export async function verifyPackage(debPath: string, version: string): Promise<v
 export async function downloadVerifiedDeb(
   release: { version: string; deb: ReleaseAsset; checksums: ReleaseAsset },
   dir: string,
+  fetchImpl: FetchImpl = fetch,
 ): Promise<string> {
   const sumsPath = join(dir, 'SHA256SUMS');
-  await download(release.checksums, sumsPath);
+  await download(release.checksums, sumsPath, fetchImpl);
   const expected = parseChecksums(await readFile(sumsPath, 'utf8')).get(release.deb.name);
   if (!expected) throw new Error(`SHA256SUMS has no entry for ${release.deb.name}.`);
   const debPath = join(dir, release.deb.name);
-  const actual = await download(release.deb, debPath);
+  const actual = await download(release.deb, debPath, fetchImpl);
   if (actual !== expected) throw new Error(`Checksum mismatch for ${release.deb.name}.`);
   await verifyPackage(debPath, release.version);
   return debPath;
