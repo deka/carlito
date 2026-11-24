@@ -13,6 +13,7 @@ import type {
   GitBaselineResult,
   GitPullResult,
   GitStatusResult,
+  GitBranchResult,
   OpenFileResult,
   ReadFileDataUrlResult,
   ReadPdfResult,
@@ -108,6 +109,8 @@ export const api = Object.freeze({
       ipcRenderer.invoke(IPC.gitBaseline, { path }) as Promise<GitBaselineResult>,
     status: (rootPath: string) =>
       ipcRenderer.invoke(IPC.gitStatus, { rootPath }) as Promise<GitStatusResult>,
+    branch: (rootPath: string) =>
+      ipcRenderer.invoke(IPC.gitBranch, { rootPath }) as Promise<GitBranchResult>,
     pull: (rootPath: string) =>
       ipcRenderer.invoke(IPC.gitPull, { rootPath }) as Promise<GitPullResult>,
   },

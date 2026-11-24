@@ -54,6 +54,21 @@
 }
 .status-error-count { color: var(--git-deleted); }
 .status-warning-count { color: var(--git-modified); }
+.status-git-branch {
+  gap: 4px;
+  max-width: 260px;
+}
+.status-git-branch svg {
+  flex: 0 0 auto;
+  width: 12px;
+  height: 12px;
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-width: 1.6;
+}
+.status-git-branch-name { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+.status-git-branch-sync { flex: 0 0 auto; color: var(--muted); }
 .status-spacer { flex: 1; }
 .status-language {
   padding: 2px 7px;

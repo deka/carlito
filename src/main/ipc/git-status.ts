@@ -1,12 +1,13 @@
 import { join, relative } from 'node:path';
 import { pathToFileURL } from 'node:url';
-import type { GitChangedFile, GitFileStatus, GitStatusResult } from '@shared/file-types';
+import type { GitBranchInfo, GitBranchResult, GitChangedFile, GitFileStatus, GitStatusResult } from '@shared/file-types';
 import { gitExec, gitExecRaw } from './git-exec';
 import { isPathInsideOrEqual } from './file-operations';
 
 export interface GitStatusContext {
   rootPath: string;
   statuses: Map<string, GitFileStatus>;
+  branch?: GitBranchInfo;
 }
 
 function statusFromPorcelain(indexStatus: string, workTreeStatus: string): GitFileStatus | undefined {
@@ -30,12 +31,79 @@ function statusFromPorcelain(indexStatus: string, workTreeStatus: string): GitFi
   return undefined;
 }
 
-function parseGitStatus(output: string, gitRootPath: string): Map<string, GitFileStatus> {
+/**
+ * Parses the `--branch` header of `git status --porcelain=v1`:
+ * `## main...origin/main [ahead 1, behind 2]`, `## No commits yet on main`,
+ * `## HEAD (no branch)`.
+ */
+export function parseBranchHeader(header: string): GitBranchInfo {
+  const line = header.replace(/^## /, '');
+  const branch: GitBranchInfo = { ahead: 0, behind: 0 };
+  const unborn = /^(?:No commits yet on|Initial commit on) (.+)$/.exec(line);
+  if (unborn) return { ...branch, name: unborn[1] };
+  if (line.startsWith('HEAD (no branch)')) return branch;
+
+  const match = /^(.+?)(?:\.\.\.(\S+))?(?: \[(.*)\])?$/.exec(line);
+  if (!match) return branch;
+  branch.name = match[1];
+  if (match[2]) branch.upstream = match[2];
+  return { ...branch, ...parseTrack(match[3]) };
+}
+
+/** Parses git's upstream tracking summary: `ahead 1, behind 2`, `behind 5`, `gone`. */
+function parseTrack(track: string | undefined): Pick<GitBranchInfo, 'ahead' | 'behind'> {
+  const counts = { ahead: 0, behind: 0 };
+  for (const part of track?.split(', ') ?? []) {
+    const [kind, count] = part.split(' ');
+    if (kind === 'ahead') counts.ahead = Number(count) || 0;
+    else if (kind === 'behind') counts.behind = Number(count) || 0;
+  }
+  return counts;
+}
+
+/**
+ * Current branch and upstream sync of the repository containing `path`. Unlike
+ * `getGitStatus`, this never scans the work tree: it only reads refs, so it is
+ * cheap enough for the status bar to call on every workspace change.
+ */
+export async function getGitBranch(path: string): Promise<GitBranchResult> {
+  try {
+    if ((await gitExec(['rev-parse', '--is-inside-work-tree'], path)) !== 'true') return { isGitRepo: false };
+  } catch {
+    return { isGitRepo: false };
+  }
+
+  let ref: string;
+  try {
+    ref = await gitExec(['symbolic-ref', '-q', 'HEAD'], path);
+  } catch {
+    return { isGitRepo: true, branch: { ahead: 0, behind: 0 } }; // detached HEAD
+  }
+
+  const branch: GitBranchInfo = { name: ref.replace(/^refs\/heads\//, ''), ahead: 0, behind: 0 };
+  try {
+    // Empty for an unborn branch; upstream fields are empty without an upstream.
+    const [upstream, track] = (
+      await gitExec(['for-each-ref', '--format=%(upstream:short)%00%(upstream:track,nobracket)', ref], path)
+    ).split('\0');
+    if (upstream) return { isGitRepo: true, branch: { ...branch, upstream, ...parseTrack(track) } };
+  } catch {
+    // Keep the branch name even if tracking info is unavailable.
+  }
+  return { isGitRepo: true, branch };
+}
+
+function parseGitStatus(output: string, gitRootPath: string): Omit<GitStatusContext, 'rootPath'> {
   const statuses = new Map<string, GitFileStatus>();
+  let branch: GitBranchInfo | undefined;
   const entries = output.split('\0').filter(Boolean);
 
   for (let index = 0; index < entries.length; index += 1) {
     const entry = entries[index]!;
+    if (entry.startsWith('## ')) {
+      branch = parseBranchHeader(entry);
+      continue;
+    }
     if (entry.length < 4) continue;
 
     const status = statusFromPorcelain(entry[0]!, entry[1]!);
@@ -47,7 +115,7 @@ function parseGitStatus(output: string, gitRootPath: string): Map<string, GitFil
     if (entry[0] === 'R' || entry[0] === 'C') index += 1;
   }
 
-  return statuses;
+  return { statuses, branch };
 }
 
 function normalizeGitStatusPath(path: string): string {
@@ -83,10 +151,10 @@ export async function getGitStatusContext(path: string): Promise<GitStatusContex
   try {
     const gitRootPath = await gitExec(['rev-parse', '--show-toplevel'], path);
     const status = await gitExecRaw(
-      ['status', '--porcelain=v1', '-z', '--untracked-files=all', '--ignored=matching'],
+      ['status', '--porcelain=v1', '-z', '--branch', '--untracked-files=all', '--ignored=matching'],
       gitRootPath,
     );
-    return { rootPath: gitRootPath, statuses: parseGitStatus(status, gitRootPath) };
+    return { rootPath: gitRootPath, ...parseGitStatus(status, gitRootPath) };
   } catch {
     return undefined;
   }
@@ -121,5 +189,5 @@ export async function getGitStatus(path: string): Promise<GitStatusResult> {
         gitStatusOrder[a.status] - gitStatusOrder[b.status] ||
         a.relativePath.localeCompare(b.relativePath),
     );
-  return { isGitRepo: true, rootPath: path, files };
+  return { isGitRepo: true, rootPath: path, branch: context.branch, files };
 }
