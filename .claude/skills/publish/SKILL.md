@@ -1,12 +1,17 @@
 ---
 name: publish
-description: Publie le travail terminé d'un worktree (ou, à défaut, de la branche courante du checkout principal) — commit, push de la branche, ouverture d'une PR sur origin puis merge (squash) qui ferme la PR. À utiliser quand l'utilisateur demande /publish ou de « publier » le travail en cours.
+description: Publie le travail accumulé sur la branche `dev` — commit/push de ce qui reste, PR `dev` → `main` sur origin puis merge (merge commit, historique des commits conservé) qui déclenche la release. À utiliser quand l'utilisateur demande /publish ou de « publier » le travail en cours.
 ---
 
 # Publish
 
-Publie le travail d'un worktree Carlo en une seule passe :
-commit → push de la branche → ouverture de la PR → merge (ce qui ferme la PR) → récupération de `main` → nettoyage du worktree.
+Flux de travail de Carlo :
+
+- Tout le travail se fait sur la branche durable **`dev`** : un commit par changement, poussé régulièrement sur `origin/dev`.
+- `main` ne bouge que par `/publish` : PR `dev` → `main`, mergée par **merge commit**.
+  Les commits de `dev` arrivent sur `main` avec leurs hash d'origine : `dev` ne diverge jamais de `main`, aucun force-push.
+- Chaque push sur `main` publie une release dont les notes listent **chaque commit** (hors merge commits) depuis la release précédente.
+  Les messages de commit sont donc les lignes des release notes.
 
 L'invocation de ce skill vaut autorisation explicite de commit, push, ouvrir et merger la PR.
 Ne demande pas de confirmation supplémentaire, sauf si une vérification ci-dessous échoue.
@@ -14,20 +19,22 @@ Ne demande pas de confirmation supplémentaire, sauf si une vérification ci-des
 ## 1. Vérifications préalables
 
 ```sh
-git rev-parse --show-toplevel
 git branch --show-current
 git status --short
+git fetch --prune origin
 ```
 
-- S'il n'y a rien à committer **et** aucun commit d'avance sur `origin/main` (`git log origin/main..HEAD`), indique qu'il n'y a rien à publier et arrête-toi.
-- **Worktree** (chemin sous `.claude/worktrees/`) : la branche courante ne doit jamais être `main`/`master`, sinon arrête-toi.
-- **Pas de worktree** (checkout principal) : **ne pose pas de question**, publie directement depuis le checkout courant.
-  Note `WORKTREE=0` pour les étapes 7 et 8.
-  - Branche courante autre que `main`/`master` : prends-la telle quelle.
-  - Branche courante `main`/`master` : crée une branche de travail avant de committer, nommée d'après les changements
-    au format `<type>/<sujet-court>` (ex. `feat/image-preview`) — `git switch -c "$BRANCH"` (les modifications non commitées suivent).
-    Si des commits locaux sont déjà en avance sur `origin/main`, ils partent aussi sur cette branche ; remets ensuite `main`
-    au niveau d'`origin/main` avec `git branch -f main origin/main` (depuis la nouvelle branche, jamais depuis `main`).
+- Si la branche courante n'est pas `dev` :
+  - `main` avec des modifications non commitées et/ou des commits locaux en avance sur `origin/main` :
+    bascule-les sur `dev` (`git switch dev` emporte les modifications non commitées ; des commits locaux sur `main`
+    se rapatrient avec `git switch dev && git merge --ff-only main` si possible, sinon arrête-toi et rapporte).
+    Remets ensuite `main` au niveau d'`origin/main` : `git branch -f main origin/main` (depuis `dev`).
+  - Une autre branche : arrête-toi et demande quoi faire.
+  - `dev` n'existe pas encore : `git switch -c dev origin/main` (ou depuis `main`), puis `git push -u origin dev`.
+- `dev` doit contenir `origin/main` (`git merge-base --is-ancestor origin/main dev`). Sinon (commit poussé
+  directement sur `main`), fais `git merge --ff-only origin/main` si possible, sinon `git merge origin/main`
+  et signale-le ; en cas de conflit, arrête-toi.
+- S'il n'y a rien à committer **et** aucun commit d'avance (`git log origin/main..dev`), indique qu'il n'y a rien à publier et arrête-toi.
 
 ## 2. Validation
 
@@ -44,23 +51,22 @@ Si une commande échoue, **arrête-toi** : ne commit pas, ne pousse pas, rapport
 
 ## 3. Commit
 
-S'il y a des changements non commités :
+S'il reste des changements non commités :
 
 - Utilise le skill `git-commit` s'il est disponible ; sinon écris un message au format Conventional Commits
-  (`feat(scope): …`, `fix(scope): …`, `chore: …`), cohérent avec `git log --oneline -10`.
+  (`feat(scope): …`, `fix(scope): …`, `ci: …`, `chore: …`), cohérent avec `git log --oneline -10`.
+- Chaque commit devient une ligne des release notes : un commit par changement distinct,
+  avec un sujet compréhensible par un utilisateur (pas de « wip », « fix typo », commit fourre-tout).
 - N'ajoute jamais de fichiers secrets (`.env`, credentials, `.claude/settings.local.json`).
 - `.claude/` est dans `.gitignore` : un fichier sous `.claude/` qui doit être versionné s'ajoute avec `git add -f`.
 
 ## 4. Push
 
-Toujours vers `origin` (le fork), jamais vers `upstream` :
+Toujours vers `origin`, jamais vers `upstream`, jamais `--force` :
 
 ```sh
-BRANCH=$(git branch --show-current)
-git push -u origin "$BRANCH"
+git push -u origin dev
 ```
-
-Pas de `--force`.
 
 ## 5. Ouverture de la PR
 
@@ -68,110 +74,46 @@ Cible explicitement le dépôt d'`origin` pour que `gh` ne choisisse pas `upstre
 
 ```sh
 REPO=$(git remote get-url origin | sed -E 's#(git@github.com:|https://github.com/)##; s#\.git$##')
-gh pr create --repo "$REPO" --base main --head "$BRANCH" \
-  --title "<titre du commit principal>" \
-  --body "<résumé des changements + vérifications effectuées>"
+gh pr view dev --repo "$REPO" --json state,url 2>/dev/null   # réutilise une PR OPEN existante
+gh pr create --repo "$REPO" --base main --head dev \
+  --title "<résumé de la publication>" \
+  --body "<liste des commits + vérifications effectuées>"
 ```
 
-- Titre : le sujet du commit s'il n'y en a qu'un, sinon un résumé au même format.
-- Corps : liste courte des changements et des commandes de validation lancées (avec leur résultat).
-- Si une PR existe déjà pour la branche (`gh pr view "$BRANCH" --repo "$REPO"`), réutilise-la.
+- Titre : le sujet du commit s'il n'y en a qu'un, sinon un résumé court au format Conventional Commits
+  (ex. `feat: PDF preview, LSP fixes`). Il n'apparaît pas dans les release notes (merge commit exclu).
+- Corps : `git log --reverse --format='- %s' origin/main..dev`, puis les commandes de validation lancées (avec leur résultat).
 
-## 6. Fermeture de la PR (merge)
+## 6. Merge
 
 ```sh
-gh pr merge "$BRANCH" --repo "$REPO" --squash --delete-branch
+gh pr merge dev --repo "$REPO" --merge
 ```
 
+- **Jamais** `--delete-branch` : `dev` est durable. Jamais `--squash` ni `--rebase` : ils réécriraient les commits
+  et feraient diverger `dev` de `main`.
 - Si le merge est refusé (conflits, checks requis, protection de branche), **ne force rien** :
   laisse la PR ouverte et rapporte la raison avec l'URL de la PR.
-- `--delete-branch` peut échouer à supprimer la branche locale car elle est utilisée par le worktree :
-  c'est sans gravité, la branche distante est supprimée quand même.
-- Hors worktree, `gh` peut déjà avoir basculé le checkout sur `main` et supprimé la branche locale :
-  vérifie `git branch --show-current` avant l'étape 7 et saute ce qui est déjà fait.
-## 7. Récupération de `main` à jour
 
-**Uniquement si la PR est bien mergée** :
+## 7. Resynchronisation
 
-```sh
-gh pr view "$BRANCH" --repo "$REPO" --json state -q .state   # doit afficher MERGED
-```
-
-Si la PR est restée ouverte ou si le merge a échoué, arrête-toi ici : garde le worktree et la branche.
-
-Sinon, récupère `main` à jour :
-
-```sh
-MAIN=$(git worktree list --porcelain | awk '/^worktree /{print $2; exit}')
-git fetch --prune origin
-# Avance le checkout principal seulement s'il est sur main et propre (fast-forward uniquement)
-if [ "$(git -C "$MAIN" branch --show-current)" = main ] && [ -z "$(git -C "$MAIN" status --porcelain)" ]; then
-  git -C "$MAIN" pull --ff-only origin main
-fi
-```
-
-Si le checkout principal n'est pas sur `main` ou contient des modifications, ne le touche pas :
-le `fetch` suffit pour la suite, signale-le dans le rapport.
-
-**Pas de worktree** (`WORKTREE=0`) : le checkout principal est sur la branche publiée. Applique d'abord la vérification
-de contenu de l'étape 8.2 ; si elle donne `IDENTIQUE` et que `git status --porcelain` est vide :
+Uniquement si `gh pr view dev --repo "$REPO" --json state -q .state` affiche `MERGED` :
 
 ```sh
 git fetch --prune origin
-git switch main
-git pull --ff-only origin main
-git branch -D "$BRANCH"   # -D : un squash merge n'est pas vu comme mergé par git
+git switch dev                         # gh a pu basculer le checkout
+git merge --ff-only origin/main        # récupère le merge commit : dev == main
+git push origin dev
+git branch -f main origin/main         # main local à jour, sans quitter dev
 ```
 
-Sinon reste sur la branche et rapporte pourquoi. Puis passe directement au rapport (étape 9), sans l'étape 8.
+Le travail reprend ensuite sur `dev`.
 
-## 8. Nettoyage du worktree
-
-Le merge est fait en **squash** : GitHub crée un nouveau commit sur `main`, et les commits de la branche
-n'en deviennent **jamais** des ancêtres, même après le `pull`. Git (`branch -d`) et `ExitWorktree`
-considéreront donc toujours la branche comme non mergée. La preuve que rien ne sera perdu est
-une comparaison de contenu avec `origin/main`.
-
-1. Vérifie qu'il ne reste rien de non commité ni de non poussé :
-
-   ```sh
-   git status --porcelain                 # doit être vide
-   git log origin/main..HEAD --oneline    # liste les commits de la branche (squashés dans main)
-   ```
-
-2. Vérifie que chaque fichier touché par la branche est identique sur `origin/main` :
-
-   ```sh
-   BASE=$(git merge-base origin/main HEAD)
-   git diff --quiet origin/main HEAD -- $(git diff --name-only "$BASE" HEAD) && echo IDENTIQUE
-   ```
-
-   Si la sortie n'est pas `IDENTIQUE` (fichier modifié depuis par un autre commit sur `main`, merge incomplet…),
-   **ne supprime rien** : garde le worktree et rapporte les fichiers qui diffèrent (`git diff --stat origin/main HEAD -- …`).
-
-3. Si tout est identique, supprime le worktree et sa branche locale :
-
-   - Worktree créé dans cette session avec `EnterWorktree` : `ExitWorktree` avec `action: "remove"`.
-     Il refusera en signalant des commits non mergés (à cause du squash) : relance-le avec
-     `discard_changes: true`, ce qui est sûr puisque l'étape 2 a prouvé que leur contenu est sur `main`.
-   - Sinon, depuis le checkout principal (jamais depuis le worktree lui-même) :
-
-     ```sh
-     WT=$(git rev-parse --show-toplevel)
-     git -C "$MAIN" worktree remove "$WT"
-     git -C "$MAIN" branch -D "$BRANCH"   # -D : un squash merge n'est pas vu comme mergé par git
-     ```
-
-     `git worktree remove` refuse s'il reste des fichiers modifiés ou non suivis : n'ajoute pas `--force`,
-     rapporte ce qui reste et laisse l'utilisateur décider.
-
-4. Confirme avec `git -C "$MAIN" worktree list` et `git -C "$MAIN" branch --list "$BRANCH"`.
-
-## 9. Rapport
+## 8. Rapport
 
 Termine avec :
 
-- le(s) commit(s) créé(s) (hash court + sujet),
-- l'URL de la PR et son état final (mergée/fermée, ou restée ouverte avec la raison),
-- si le worktree a été supprimé ou conservé (et pourquoi),
-- si le checkout principal a été avancé, ou la commande à lancer sinon : `git -C <repo> pull --ff-only origin main`.
+- les commits publiés (hash court + sujet), qui seront les lignes des release notes,
+- l'URL de la PR et son état final (mergée, ou restée ouverte avec la raison),
+- l'état de `dev` et `main` après resynchronisation,
+- un rappel que le workflow Release tourne sur `main` (Actions) et qu'ensuite `/update-carlo` installe la build.

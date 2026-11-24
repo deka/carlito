@@ -38,6 +38,13 @@ npm run lint
 
 Do not introduce package downloads or dependency changes unless explicitly requested.
 
+## Git workflow
+
+- Work on the long-lived `dev` branch. Do not create feature branches, and do not commit to `main` directly.
+- One commit per distinct change, in Conventional Commits format (`feat(scope): …`, `fix(scope): …`, `ci: …`). Each commit subject becomes a line of the release notes, so write it for a user reading the changelog.
+- Push `dev` to `origin` regularly (`git push origin dev`). Never force-push `dev` or `main`.
+- `main` only moves through `/publish`: a `dev` → `main` PR merged with a merge commit (never squash/rebase, never delete `dev`). Each push to `main` builds and publishes a release.
+
 ## Electron / IPC rules
 
 - Register global `ipcMain.handle` handlers once from `src/main/index.ts`, not per window.
