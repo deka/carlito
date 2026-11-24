@@ -1,6 +1,6 @@
 ---
 name: publish
-description: Publie le travail terminé d'un worktree — commit, push de la branche, ouverture d'une PR sur origin puis merge (squash) qui ferme la PR. À utiliser quand l'utilisateur demande /publish ou de « publier » le travail d'un worktree.
+description: Publie le travail terminé d'un worktree (ou, à défaut, de la branche courante du checkout principal) — commit, push de la branche, ouverture d'une PR sur origin puis merge (squash) qui ferme la PR. À utiliser quand l'utilisateur demande /publish ou de « publier » le travail en cours.
 ---
 
 # Publish
@@ -19,9 +19,15 @@ git branch --show-current
 git status --short
 ```
 
-- Le répertoire courant doit être un worktree (chemin sous `.claude/worktrees/`). Sinon, arrête-toi et demande.
-- La branche courante ne doit **jamais** être `main`/`master`. Sinon, arrête-toi.
 - S'il n'y a rien à committer **et** aucun commit d'avance sur `origin/main` (`git log origin/main..HEAD`), indique qu'il n'y a rien à publier et arrête-toi.
+- **Worktree** (chemin sous `.claude/worktrees/`) : la branche courante ne doit jamais être `main`/`master`, sinon arrête-toi.
+- **Pas de worktree** (checkout principal) : **ne pose pas de question**, publie directement depuis le checkout courant.
+  Note `WORKTREE=0` pour les étapes 7 et 8.
+  - Branche courante autre que `main`/`master` : prends-la telle quelle.
+  - Branche courante `main`/`master` : crée une branche de travail avant de committer, nommée d'après les changements
+    au format `<type>/<sujet-court>` (ex. `feat/image-preview`) — `git switch -c "$BRANCH"` (les modifications non commitées suivent).
+    Si des commits locaux sont déjà en avance sur `origin/main`, ils partent aussi sur cette branche ; remets ensuite `main`
+    au niveau d'`origin/main` avec `git branch -f main origin/main` (depuis la nouvelle branche, jamais depuis `main`).
 
 ## 2. Validation
 
@@ -81,6 +87,8 @@ gh pr merge "$BRANCH" --repo "$REPO" --squash --delete-branch
   laisse la PR ouverte et rapporte la raison avec l'URL de la PR.
 - `--delete-branch` peut échouer à supprimer la branche locale car elle est utilisée par le worktree :
   c'est sans gravité, la branche distante est supprimée quand même.
+- Hors worktree, `gh` peut déjà avoir basculé le checkout sur `main` et supprimé la branche locale :
+  vérifie `git branch --show-current` avant l'étape 7 et saute ce qui est déjà fait.
 ## 7. Récupération de `main` à jour
 
 **Uniquement si la PR est bien mergée** :
@@ -104,6 +112,18 @@ fi
 
 Si le checkout principal n'est pas sur `main` ou contient des modifications, ne le touche pas :
 le `fetch` suffit pour la suite, signale-le dans le rapport.
+
+**Pas de worktree** (`WORKTREE=0`) : le checkout principal est sur la branche publiée. Applique d'abord la vérification
+de contenu de l'étape 8.2 ; si elle donne `IDENTIQUE` et que `git status --porcelain` est vide :
+
+```sh
+git fetch --prune origin
+git switch main
+git pull --ff-only origin main
+git branch -D "$BRANCH"   # -D : un squash merge n'est pas vu comme mergé par git
+```
+
+Sinon reste sur la branche et rapporte pourquoi. Puis passe directement au rapport (étape 9), sans l'étape 8.
 
 ## 8. Nettoyage du worktree
 
