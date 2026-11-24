@@ -1,4 +1,4 @@
-import { BrowserWindow, app, dialog, ipcMain, shell } from 'electron';
+import { BrowserWindow, app, dialog, ipcMain, net, shell } from 'electron';
 import { execFile } from 'node:child_process';
 import { constants } from 'node:fs';
 import { access, chmod, mkdtemp, rm } from 'node:fs/promises';
@@ -13,6 +13,7 @@ import {
   PACKAGE_NAME,
   PKEXEC,
   aptInstall,
+  describeError,
   downloadVerifiedDeb,
   type ReleaseAsset,
 } from './package-install';
@@ -49,8 +50,14 @@ function setState(next: UpdateState): void {
 }
 
 function errorMessage(error: unknown): string {
-  return error instanceof Error ? error.message : String(error);
+  return describeError(error);
 }
+
+/**
+ * Chromium's network stack (system proxy, certificates, IPv4/IPv6 fallback) rather than Node's,
+ * for both the check and the download so they can't disagree about reachability.
+ */
+const netFetch = (url: string, init?: RequestInit): Promise<Response> => net.fetch(url, init);
 
 async function showMessage(
   sender: Electron.WebContents | undefined,
@@ -61,7 +68,7 @@ async function showMessage(
 }
 
 async function fetchLatestRelease(): Promise<LatestRelease> {
-  const response = await fetch(LATEST_RELEASE_URL, {
+  const response = await netFetch(LATEST_RELEASE_URL, {
     headers: { Accept: 'application/vnd.github+json', 'User-Agent': 'carlo-update-check' },
     signal: AbortSignal.timeout(15_000),
   });
@@ -178,6 +185,7 @@ async function installUpdate(sender: Electron.WebContents): Promise<void> {
     const debPath = await downloadVerifiedDeb(
       { version: release.version, deb: release.deb, checksums: release.checksums },
       dir,
+      netFetch,
     );
 
     setState({ ...available, phase: 'installing' });
@@ -238,7 +246,9 @@ async function promptRestart(sender: Electron.WebContents | undefined): Promise<
     defaultId: 0,
     cancelId: 1,
     noLink: true,
-    message: state.latestVersion ? `Carlo ${state.latestVersion} is installed.` : 'Carlo is updated.',
+    message: state.latestVersion
+      ? `Carlo ${state.latestVersion} is installed.`
+      : 'Carlo is updated.',
     detail: 'Restart Carlo to use the new version. All windows will be closed.',
   });
   if (response === 0) restart();
