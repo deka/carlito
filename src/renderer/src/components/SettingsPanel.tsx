@@ -184,6 +184,21 @@ export function SettingsPanel() {
           <span>Organize imports on save</span>
         </label>
 
+        <label className="settings-checkbox">
+          <input
+            checked={draft.updates.checkAutomatically}
+            disabled={isLoading || isSaving}
+            onChange={(event) =>
+              setDraft((prev) => ({
+                ...prev,
+                updates: { ...prev.updates, checkAutomatically: event.target.checked },
+              }))
+            }
+            type="checkbox"
+          />
+          <span>Check for updates automatically</span>
+        </label>
+
         {configPath ? <p className="settings-path">Config file: {configPath}</p> : null}
 
         <footer className="settings-actions">

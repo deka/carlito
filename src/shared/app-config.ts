@@ -26,6 +26,10 @@ export interface CarloUserConfig {
   treeView: {
     fontFamily: string;
   };
+  updates: {
+    /** Check GitHub for a newer Carlo release shortly after launch and once a day. */
+    checkAutomatically: boolean;
+  };
 }
 
 export function defaultUserConfig(): CarloUserConfig {
@@ -43,6 +47,9 @@ export function defaultUserConfig(): CarloUserConfig {
     treeView: {
       fontFamily:
         "ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', monospace",
+    },
+    updates: {
+      checkAutomatically: true,
     },
   };
 }
@@ -86,6 +93,12 @@ export function mergeUserConfig(
     },
     treeView: {
       fontFamily: nonEmptyString(config?.treeView?.fontFamily, defaults.treeView.fontFamily),
+    },
+    updates: {
+      checkAutomatically: booleanValue(
+        config?.updates?.checkAutomatically,
+        defaults.updates.checkAutomatically,
+      ),
     },
   };
 }

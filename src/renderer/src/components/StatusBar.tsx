@@ -2,6 +2,7 @@ import { useActiveTab, useEditorStore } from '../store/useEditorStore';
 import { problemCounts, useProblemsStore } from '../store/useProblemsStore';
 import { useBottomPanelStore } from '../store/useBottomPanelStore';
 import { LspStatusIndicator } from './LspStatusIndicator';
+import { UpdateIndicator } from './UpdateIndicator';
 
 export function StatusBar() {
   const tab = useActiveTab();
@@ -32,6 +33,7 @@ export function StatusBar() {
         </span>
       </button>
       <span className="status-spacer" />
+      <UpdateIndicator />
       {tab?.languageId ? <span className="status-item status-language">{tab.languageId}</span> : null}
       <LspStatusIndicator languageId={tab?.languageId} rootUri={workspaceRootUri} />
     </footer>

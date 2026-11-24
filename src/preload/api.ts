@@ -33,6 +33,7 @@ import type {
   LspStartOptions,
   LspStartResult,
 } from '@shared/lsp-types';
+import type { UpdateState } from '@shared/update-types';
 import type {
   TerminalCreateRequest,
   TerminalCreateResult,
@@ -57,6 +58,16 @@ export const api = Object.freeze({
         | { ok: true; path: string; warning?: string }
         | { ok: false; error: string; instructions?: string }
       >,
+  },
+  update: {
+    state: () => ipcRenderer.invoke(IPC.updateState) as Promise<UpdateState>,
+    /** A manual check reports its result in a dialog; a background one stays silent. */
+    check: (manual: boolean) =>
+      ipcRenderer.invoke(IPC.updateCheck, { manual }) as Promise<UpdateState>,
+    /** Opens the install (or restart) prompt for the release found by the last check. */
+    install: () => ipcRenderer.invoke(IPC.updateInstall) as Promise<UpdateState>,
+    restart: () => ipcRenderer.invoke(IPC.updateRestart) as Promise<{ ok: true }>,
+    onChanged: (cb: (state: UpdateState) => void) => on<UpdateState>(IPC.updateChanged, cb),
   },
   config: {
     language: () => ipcRenderer.invoke(IPC.configLanguage) as Promise<LanguageConfig>,

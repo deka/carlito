@@ -7,6 +7,7 @@ export const APP_MENU_LABELS = [
   'Navigate',
   'View',
   'Preferences',
+  'Help',
 ] as const;
 
 export type AppMenuLabel = (typeof APP_MENU_LABELS)[number];
