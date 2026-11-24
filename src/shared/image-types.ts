@@ -30,3 +30,12 @@ export function isBinaryImagePath(path: string): boolean {
   const mimeType = imageMimeTypeForPath(path);
   return mimeType !== undefined && mimeType !== 'image/svg+xml';
 }
+
+export function isPdfPath(path: string): boolean {
+  return extensionOf(path) === '.pdf';
+}
+
+/** Files shown in a read-only preview tab: never decoded as text nor given a Monaco model. */
+export function isBinaryPreviewPath(path: string): boolean {
+  return isBinaryImagePath(path) || isPdfPath(path);
+}

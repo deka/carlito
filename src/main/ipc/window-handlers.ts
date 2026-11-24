@@ -1,5 +1,6 @@
 import { BrowserWindow, app, dialog, ipcMain, shell } from 'electron';
 import { IPC } from '@shared/ipc';
+import { cancelPendingRelaunch } from '../update/update-service';
 
 const closeConfirmedWindowIds = new Set<number>();
 let isQuitting = false;
@@ -95,6 +96,7 @@ export function registerWindowHandlers(): void {
 
   ipcMain.handle(IPC.windowCloseCancel, () => {
     isQuitting = false;
+    cancelPendingRelaunch();
     return { ok: true };
   });
 

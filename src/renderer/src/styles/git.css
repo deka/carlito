@@ -22,6 +22,36 @@
   text-transform: uppercase;
 }
 
+.git-panel-branch {
+  display: flex;
+  flex: 0 1 auto;
+  align-items: center;
+  gap: 5px;
+  min-width: 0;
+  color: var(--fg);
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+.git-panel-branch svg {
+  flex: 0 0 auto;
+  width: 14px;
+  height: 14px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.6;
+  stroke-linecap: round;
+}
+
+.git-panel-branch-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.git-panel-branch-sync {
+  color: var(--muted);
+}
+
 .git-panel-summary {
   display: flex;
   flex: 1 1 auto;

@@ -19,7 +19,7 @@ import { useWorkbenchUiStore } from './store/useWorkbenchUiStore';
 import { isGitDiffUri } from './git/diffTabs';
 import { isMarkdownPreviewUri } from './markdown/previewTabs';
 import { isTerminalUri } from './terminal/terminalTabs';
-import { isBinaryImagePath } from '@shared/image-types';
+import { isBinaryImagePath, isPdfPath } from '@shared/image-types';
 
 const activityBarWidth = 48;
 const MonacoEditor = lazy(() =>
@@ -33,6 +33,8 @@ const MarkdownPreview = lazy(() => import('./components/MarkdownPreview').then((
 const ImagePreview = lazy(() =>
   import('./components/preview/ImagePreview').then((module) => ({ default: module.ImagePreview })),
 );
+
+const PdfPreview = lazy(() => import('./components/preview/PdfPreview').then((module) => ({ default: module.PdfPreview })));
 
 export function App() {
   useKeybindings();
@@ -118,6 +120,10 @@ export function App() {
                 ) : tab && tab.uri.startsWith('file:') && isBinaryImagePath(tab.path) ? (
                   <Suspense fallback={<div className="editor-stack" />}>
                     <ImagePreview groupId={group.id} />
+                  </Suspense>
+                ) : tab && tab.uri.startsWith('file:') && isPdfPath(tab.path) ? (
+                  <Suspense fallback={<div className="editor-stack" />}>
+                    <PdfPreview groupId={group.id} />
                   </Suspense>
                 ) : hasActiveTab || warmEditor ? (
                   <Suspense

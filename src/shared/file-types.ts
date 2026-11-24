@@ -19,6 +19,10 @@ export interface ReadFileDataUrlResult {
   dataUrl: string;
 }
 
+export interface ReadPdfResult {
+  bytes: Uint8Array;
+}
+
 export interface SaveFileRequest {
   path: string;
   content: string;
@@ -107,9 +111,23 @@ export interface GitChangedFile {
   status: GitFileStatus;
 }
 
+export interface GitBranchInfo {
+  /** Current branch; undefined when HEAD is detached. */
+  name?: string;
+  upstream?: string;
+  ahead: number;
+  behind: number;
+}
+
+export interface GitBranchResult {
+  isGitRepo: boolean;
+  branch?: GitBranchInfo;
+}
+
 export interface GitStatusResult {
   isGitRepo: boolean;
   rootPath?: string;
+  branch?: GitBranchInfo;
   files: GitChangedFile[];
 }
 

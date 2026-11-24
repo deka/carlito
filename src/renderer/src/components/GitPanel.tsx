@@ -1,13 +1,28 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useWorkspaceChangeDebounce } from '../hooks/useWorkspaceChangeDebounce';
-import type { GitChangedFile, GitFileStatus } from '@shared/file-types';
+import type { GitBranchInfo, GitChangedFile, GitFileStatus } from '@shared/file-types';
 import { useEditorStore } from '../store/useEditorStore';
 import { useBottomPanelStore } from '../store/useBottomPanelStore';
 import { GitFileList } from './GitFileList';
 import { statusLabels } from '../git/gitStatusMaps';
+import { branchDisplayName, branchSyncLabel, branchTitle, sameBranch } from '../git/gitBranch';
+import { useGitBranchStore } from '../store/useGitBranchStore';
+import { GitBranchIcon } from './GitBranchIcon';
+
+function GitBranchLabel({ branch }: { branch: GitBranchInfo }) {
+  const sync = branchSyncLabel(branch);
+  return (
+    <span className="git-panel-branch" title={branchTitle(branch)}>
+      <GitBranchIcon />
+      <span className="git-panel-branch-name">{branchDisplayName(branch)}</span>
+      {sync ? <span className="git-panel-branch-sync">{sync}</span> : null}
+    </span>
+  );
+}
 
 interface GitPanelState {
   files: GitChangedFile[];
+  branch?: GitBranchInfo;
   isGitRepo: boolean;
   hasFetched: boolean;
   error: string | null;
@@ -41,7 +56,7 @@ export function GitPanel() {
   const rootPathRef = useRef(rootPath);
   rootPathRef.current = rootPath;
 
-  const { files, isGitRepo, hasFetched, error } = state;
+  const { files, branch, isGitRepo, hasFetched, error } = state;
 
   const counts = useMemo(() => {
     const result = new Map<GitFileStatus, number>();
@@ -61,11 +76,25 @@ export function GitPanel() {
     try {
       const result = await window.api.git.status(rootPath);
       if (requestId !== requestIdRef.current) return;
+      // Same answer as the status bar's lighter query: keep both in step.
+      useGitBranchStore.getState().setBranch(rootPath, result);
       setState((prev) => {
-        if (prev.hasFetched && !prev.error && prev.isGitRepo === result.isGitRepo && sameFiles(prev.files, result.files)) {
+        if (
+          prev.hasFetched &&
+          !prev.error &&
+          prev.isGitRepo === result.isGitRepo &&
+          sameBranch(prev.branch, result.branch) &&
+          sameFiles(prev.files, result.files)
+        ) {
           return prev;
         }
-        const next = { files: result.files, isGitRepo: result.isGitRepo, hasFetched: true, error: null };
+        const next = {
+          files: result.files,
+          branch: result.branch,
+          isGitRepo: result.isGitRepo,
+          hasFetched: true,
+          error: null,
+        };
         lastStateByRoot.set(rootPath, next);
         return next;
       });
@@ -112,6 +141,7 @@ export function GitPanel() {
     <section className="git-panel" aria-label="Git changes">
       <header className="git-panel-header">
         <div className="git-panel-title">Source Control</div>
+        {isGitRepo && branch ? <GitBranchLabel branch={branch} /> : null}
         <div className="git-panel-summary">
           {files.length} changed file{files.length === 1 ? '' : 's'}
           {[...counts.entries()].map(([status, count]) => (

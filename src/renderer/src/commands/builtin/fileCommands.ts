@@ -1,4 +1,4 @@
-import { isBinaryImagePath } from '@shared/image-types';
+import { isBinaryPreviewPath } from '@shared/image-types';
 import { getEditor } from '../../editor/editorRegistry';
 import { getModel, getOrCreateModel } from '../../editor/models';
 import { closeTabWithPrompt, saveActiveTab, saveAllTabs } from '../../editor/saveActions';
@@ -27,8 +27,8 @@ function newFile(): void {
 async function openFile(): Promise<void> {
   const file = await window.api.file.openDialog();
   if (!file) return;
-  const image = isBinaryImagePath(file.path);
-  if (!image) getOrCreateModel(file.uri, file.content, file.languageId);
+  const preview = isBinaryPreviewPath(file.path);
+  if (!preview) getOrCreateModel(file.uri, file.content, file.languageId);
   if (!useEditorStore.getState().workspace) {
     useEditorStore.getState().setWorkspace(rootFor(file.path));
   }
@@ -39,7 +39,7 @@ async function openFile(): Promise<void> {
     languageId: file.languageId,
     title: titleFromPath(file.path),
   });
-  if (image) return;
+  if (preview) return;
   await ensureLanguageClient(file.languageId, rootUri, file.uri).catch((error) => console.error(error));
 }
 

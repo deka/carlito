@@ -1,9 +1,9 @@
 import { ipcMain } from 'electron';
 import { dirname, relative } from 'node:path';
 import { IPC } from '@shared/ipc';
-import type { GitBaselineResult, GitPullResult, GitStatusResult } from '@shared/file-types';
+import type { GitBaselineResult, GitBranchResult, GitPullResult, GitStatusResult } from '@shared/file-types';
 import { gitExec, gitExecRaw, gitPull } from './git-exec';
-import { getGitStatus } from './git-status';
+import { getGitBranch, getGitStatus } from './git-status';
 import { authorizeWindowPath, windowFromEvent } from './workspace-state';
 
 async function resolveBaselineContent(path: string): Promise<GitBaselineResult> {
@@ -36,6 +36,12 @@ export function registerGitHandlers(): void {
     IPC.gitStatus,
     async (event, { rootPath }: { rootPath: string }): Promise<GitStatusResult> =>
       getGitStatus(await authorizeWindowPath(windowFromEvent(event), rootPath)),
+  );
+
+  ipcMain.handle(
+    IPC.gitBranch,
+    async (event, { rootPath }: { rootPath: string }): Promise<GitBranchResult> =>
+      getGitBranch(await authorizeWindowPath(windowFromEvent(event), rootPath)),
   );
 
   ipcMain.handle(

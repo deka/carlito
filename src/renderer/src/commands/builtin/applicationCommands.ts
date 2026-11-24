@@ -39,6 +39,13 @@ export function registerApplicationCommands(): void {
     run: installCommandLine,
   });
   registerCommand({
+    id: 'app.checkForUpdates',
+    title: 'Check for Updates…',
+    run: async () => {
+      await window.api.update.check(true);
+    },
+  });
+  registerCommand({
     id: 'window.zoomIn',
     title: 'Zoom In',
     keybinding: 'Ctrl+=',

@@ -13,8 +13,10 @@ import type {
   GitBaselineResult,
   GitPullResult,
   GitStatusResult,
+  GitBranchResult,
   OpenFileResult,
   ReadFileDataUrlResult,
+  ReadPdfResult,
   ReadFileResult,
   SaveAsDialogRequest,
   SaveAsDialogResult,
@@ -33,6 +35,7 @@ import type {
   LspStartOptions,
   LspStartResult,
 } from '@shared/lsp-types';
+import type { UpdateState } from '@shared/update-types';
 import type {
   TerminalCreateRequest,
   TerminalCreateResult,
@@ -58,6 +61,16 @@ export const api = Object.freeze({
         | { ok: false; error: string; instructions?: string }
       >,
   },
+  update: {
+    state: () => ipcRenderer.invoke(IPC.updateState) as Promise<UpdateState>,
+    /** A manual check reports its result in a dialog; a background one stays silent. */
+    check: (manual: boolean) =>
+      ipcRenderer.invoke(IPC.updateCheck, { manual }) as Promise<UpdateState>,
+    /** Opens the install (or restart) prompt for the release found by the last check. */
+    install: () => ipcRenderer.invoke(IPC.updateInstall) as Promise<UpdateState>,
+    restart: () => ipcRenderer.invoke(IPC.updateRestart) as Promise<{ ok: true }>,
+    onChanged: (cb: (state: UpdateState) => void) => on<UpdateState>(IPC.updateChanged, cb),
+  },
   config: {
     language: () => ipcRenderer.invoke(IPC.configLanguage) as Promise<LanguageConfig>,
     languagePath: () => ipcRenderer.invoke(IPC.configLanguagePath) as Promise<{ path: string }>,
@@ -71,6 +84,7 @@ export const api = Object.freeze({
     read: (path: string) => ipcRenderer.invoke(IPC.fileRead, { path }) as Promise<ReadFileResult>,
     readDataUrl: (path: string) =>
       ipcRenderer.invoke(IPC.fileReadDataUrl, { path }) as Promise<ReadFileDataUrlResult>,
+    readPdf: (path: string) => ipcRenderer.invoke(IPC.fileReadPdf, { path }) as Promise<ReadPdfResult>,
     save: (request: SaveFileRequest) =>
       ipcRenderer.invoke(IPC.fileSave, request) as Promise<{ ok: true }>,
     saveAsDialog: (request: SaveAsDialogRequest) =>
@@ -95,6 +109,8 @@ export const api = Object.freeze({
       ipcRenderer.invoke(IPC.gitBaseline, { path }) as Promise<GitBaselineResult>,
     status: (rootPath: string) =>
       ipcRenderer.invoke(IPC.gitStatus, { rootPath }) as Promise<GitStatusResult>,
+    branch: (rootPath: string) =>
+      ipcRenderer.invoke(IPC.gitBranch, { rootPath }) as Promise<GitBranchResult>,
     pull: (rootPath: string) =>
       ipcRenderer.invoke(IPC.gitPull, { rootPath }) as Promise<GitPullResult>,
   },

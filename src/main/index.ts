@@ -9,6 +9,7 @@ import { registerGitHandlers } from './ipc/git-handlers';
 import { registerLspHandlers } from './ipc/lsp-handlers';
 import { registerTerminalHandlers } from './ipc/terminal-handlers';
 import { registerWindowHandlers } from './ipc/window-handlers';
+import { registerUpdateHandlers } from './update/update-service';
 import { registerLocalResourceProtocol, registerLocalResourceScheme } from './local-resource-protocol';
 import { installAppMenu, registerMenuHandlers } from './menu';
 import { initialWorkspacePath } from './workspace';
@@ -35,6 +36,7 @@ if (!gotSingleInstanceLock) {
   registerLspHandlers();
   registerTerminalHandlers();
   registerWindowHandlers();
+  registerUpdateHandlers();
   installAppMenu();
   registerMenuHandlers();
 
