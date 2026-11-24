@@ -138,6 +138,16 @@ export async function downloadVerifiedDeb(
   return debPath;
 }
 
+/** pkexec could not obtain authorization: the package itself is fine and can be installed by hand. */
+export class AuthorizationError extends Error {
+  override name = 'AuthorizationError';
+}
+
+/** The command a user can paste in a terminal to install `debPath` themselves. */
+export function manualInstallCommand(debPath: string): string {
+  return `sudo apt install '${debPath.replaceAll("'", "'\\''")}'`;
+}
+
 export type InstallOutcome = 'installed' | 'cancelled';
 
 /** Runs apt-get as root through polkit: the password dialog belongs to the system, never to Carlo. */
@@ -151,12 +161,12 @@ export function aptInstall(debPath: string): Promise<InstallOutcome> {
         if (!error) return resolve('installed');
         // pkexec exits 126 when the authentication dialog is dismissed: stay silent.
         if (error.code === 126) return resolve('cancelled');
-        if (error.code === 127) {
-          return reject(
-            new Error('Authorization failed, or no polkit authentication agent is running.'),
-          );
-        }
         const detail = stderr.trim().split('\n').slice(-6).join('\n');
+        if (error.code === 127) {
+          // pkexec's own reason (e.g. "Not authorized") is on stderr; keep it, it is the only clue.
+          const reason = 'Authorization failed, or no polkit authentication agent is running.';
+          return reject(new AuthorizationError(detail ? `${reason}\n${detail}` : reason));
+        }
         reject(new Error(detail || error.message));
       },
     );
