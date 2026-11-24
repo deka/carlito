@@ -6,6 +6,7 @@ import type { EditorTab } from '../../store/useEditorStore';
 /** One lazily loaded component per inline preview kind: adding a kind without one fails to typecheck. */
 const previewComponents: Record<InlinePreviewKind, LazyExoticComponent<ComponentType<InlinePreviewProps>>> = {
   markdown: lazy(() => import('../MarkdownRichEditor').then((module) => ({ default: module.MarkdownRichEditor }))),
+  html: lazy(() => import('./HtmlPreview').then((module) => ({ default: module.HtmlPreview }))),
   svg: lazy(() => import('./SvgPreview').then((module) => ({ default: module.SvgPreview }))),
 };
 

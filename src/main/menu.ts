@@ -174,7 +174,7 @@ export function installAppMenu(): void {
           click: () => sendCommand('markdown.showPreviewToSide'),
         },
         {
-          label: 'Toggle Preview (Markdown, SVG)',
+          label: 'Toggle Preview (Markdown, SVG, HTML)',
           accelerator: 'CmdOrCtrl+Alt+V',
           click: () => sendCommand('markdown.togglePreview'),
         },
