@@ -1,4 +1,4 @@
-import { BrowserWindow, app, dialog, ipcMain, net, shell } from 'electron';
+import { BrowserWindow, app, clipboard, dialog, ipcMain, net, shell } from 'electron';
 import { execFile } from 'node:child_process';
 import { constants } from 'node:fs';
 import { access, chmod, mkdtemp, rm } from 'node:fs/promises';
@@ -10,11 +10,13 @@ import type { UpdateCheckRequest, UpdateState } from '@shared/update-types';
 import { loadUserConfig } from '../config/user-config';
 import {
   APT_GET,
+  AuthorizationError,
   PACKAGE_NAME,
   PKEXEC,
   aptInstall,
   describeError,
   downloadVerifiedDeb,
+  manualInstallCommand,
   type ReleaseAsset,
 } from './package-install';
 import { compareVersions } from './versions';
@@ -178,6 +180,7 @@ async function installUpdate(sender: Electron.WebContents): Promise<void> {
   installInFlight = true;
   const available = state;
   const dir = await mkdtemp(join(tmpdir(), 'carlo-update-'));
+  let keepDir = false;
   try {
     // apt drops privileges to `_apt` to read local packages; let it traverse the directory.
     await chmod(dir, 0o755);
@@ -199,6 +202,22 @@ async function installUpdate(sender: Electron.WebContents): Promise<void> {
     await promptRestart(sender);
   } catch (error) {
     setState(available);
+    if (error instanceof AuthorizationError) {
+      // The verified package is on disk: keep it and let the user install it from a terminal.
+      keepDir = true;
+      const command = manualInstallCommand(join(dir, release.deb.name));
+      const { response } = await showMessage(sender, {
+        type: 'error',
+        buttons: ['Copy Command', 'Close'],
+        defaultId: 0,
+        cancelId: 1,
+        noLink: true,
+        message: `Could not install Carlo ${release.version}.`,
+        detail: `${errorMessage(error)}\n\nThe downloaded package was verified. You can install it from a terminal:\n${command}`,
+      });
+      if (response === 0) clipboard.writeText(command);
+      return;
+    }
     await showMessage(sender, {
       type: 'error',
       message: `Could not install Carlo ${release.version}.`,
@@ -206,7 +225,7 @@ async function installUpdate(sender: Electron.WebContents): Promise<void> {
     });
   } finally {
     installInFlight = false;
-    await rm(dir, { recursive: true, force: true }).catch(() => undefined);
+    if (!keepDir) await rm(dir, { recursive: true, force: true }).catch(() => undefined);
   }
 }
 
