@@ -19,6 +19,10 @@ export interface ReadFileDataUrlResult {
   dataUrl: string;
 }
 
+export interface ReadPdfResult {
+  bytes: Uint8Array;
+}
+
 export interface SaveFileRequest {
   path: string;
   content: string;

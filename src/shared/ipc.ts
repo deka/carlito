@@ -14,6 +14,7 @@ export const IPC = {
   fileOpenDialog: 'file:openDialog',
   fileRead: 'file:read',
   fileReadDataUrl: 'file:readDataUrl',
+  fileReadPdf: 'file:readPdf',
   fileSave: 'file:save',
   fileSaveAsDialog: 'file:saveAsDialog',
   fileCreate: 'file:create',

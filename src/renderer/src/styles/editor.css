@@ -782,6 +782,20 @@
   cursor: zoom-out;
 }
 
+.pdf-preview {
+  display: flex;
+  height: 100%;
+  min-width: 0;
+  min-height: 0;
+  background: var(--bg);
+}
+
+.pdf-preview-frame {
+  flex: 1;
+  border: 0;
+  background: var(--bg);
+}
+
 .image-preview-error {
   margin: auto;
   color: var(--muted);

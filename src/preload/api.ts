@@ -15,6 +15,7 @@ import type {
   GitStatusResult,
   OpenFileResult,
   ReadFileDataUrlResult,
+  ReadPdfResult,
   ReadFileResult,
   SaveAsDialogRequest,
   SaveAsDialogResult,
@@ -82,6 +83,7 @@ export const api = Object.freeze({
     read: (path: string) => ipcRenderer.invoke(IPC.fileRead, { path }) as Promise<ReadFileResult>,
     readDataUrl: (path: string) =>
       ipcRenderer.invoke(IPC.fileReadDataUrl, { path }) as Promise<ReadFileDataUrlResult>,
+    readPdf: (path: string) => ipcRenderer.invoke(IPC.fileReadPdf, { path }) as Promise<ReadPdfResult>,
     save: (request: SaveFileRequest) =>
       ipcRenderer.invoke(IPC.fileSave, request) as Promise<{ ok: true }>,
     saveAsDialog: (request: SaveAsDialogRequest) =>

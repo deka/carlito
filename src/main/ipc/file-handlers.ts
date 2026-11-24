@@ -3,7 +3,7 @@ import { cp, mkdir, open, readFile, rename, rm, stat, writeFile } from 'node:fs/
 import { basename, dirname, join } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { IPC } from '@shared/ipc';
-import { imageMimeTypeForPath, isBinaryImagePath } from '@shared/image-types';
+import { imageMimeTypeForPath, isBinaryPreviewPath, isPdfPath } from '@shared/image-types';
 import { languageIdFromPath } from '@shared/language-registry';
 import {
   assertSafeChildName,
@@ -33,6 +33,7 @@ import type {
   FileRenameRequest,
   OpenFileResult,
   ReadFileRequest,
+  ReadPdfResult,
   SaveAsDialogRequest,
   SaveFileRequest,
   WorkspaceSearchRequest,
@@ -60,14 +61,29 @@ async function readImageDataUrl(path: string): Promise<string> {
   }
 }
 
+const maxPdfFileSize = 200 * 1024 * 1024;
+
+async function readPdfBytes(path: string): Promise<Uint8Array> {
+  if (!isPdfPath(path)) throw new Error('Not a PDF file');
+  const file = await open(path, 'r');
+  try {
+    const fileStats = await file.stat();
+    if (!fileStats.isFile()) throw new Error('PDF path is not a file');
+    if (fileStats.size > maxPdfFileSize) throw new Error('PDF exceeds the 200 MiB size limit');
+    return await file.readFile();
+  } finally {
+    await file.close();
+  }
+}
+
 export function registerFileHandlers(): void {
   ipcMain.handle(IPC.fileOpenDialog, async (event): Promise<OpenFileResult | null> => {
     const win = windowFromEvent(event);
     const result = await dialog.showOpenDialog(win, { properties: ['openFile'] });
     if (result.canceled || result.filePaths.length === 0) return null;
     const path = result.filePaths[0]!;
-    // Images are previewed from a data URL; never decode their bytes as text.
-    const content = isBinaryImagePath(path) ? '' : await readFile(path, 'utf8');
+    // Images and PDFs are previewed from their bytes; never decode them as text.
+    const content = isBinaryPreviewPath(path) ? '' : await readFile(path, 'utf8');
     await registerAllowedFile(win, path);
     return {
       uri: pathToFileURL(path).toString(),
@@ -93,6 +109,15 @@ export function registerFileHandlers(): void {
     // Refresh image previews when the file changes on disk.
     watchWorkspaceDirectory(win, dirname(authorizedPath));
     return { dataUrl };
+  });
+
+  ipcMain.handle(IPC.fileReadPdf, async (event, { path }: ReadFileRequest): Promise<ReadPdfResult> => {
+    const win = windowFromEvent(event);
+    const authorizedPath = await authorizeWindowPath(win, path);
+    const bytes = await readPdfBytes(authorizedPath);
+    // Refresh PDF previews when the file changes on disk.
+    watchWorkspaceDirectory(win, dirname(authorizedPath));
+    return { bytes };
   });
 
   ipcMain.handle(IPC.fileSave, async (event, { path, content }: SaveFileRequest) => {
