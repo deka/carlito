@@ -2,7 +2,7 @@ import type { CodeAction, Command } from 'vscode';
 import type { EditorTab } from '../store/useEditorStore';
 import { useSettingsStore } from '../store/useSettingsStore';
 import { activeTab, isUriOpen, useEditorStore } from '../store/useEditorStore';
-import { disposeModel, getModel, replaceModelUri } from './models';
+import { disposeModel, getModel, isModelDirty, markModelSaved, replaceModelUri } from './models';
 import { invalidateGitBaseline } from './gitGutter';
 import { isTerminalUri } from '../terminal/terminalTabs';
 import { flushAllRichEdits, flushRichEdits } from '../markdown/pendingRichEdits';
@@ -87,6 +87,7 @@ export async function saveTab(tab: EditorTab): Promise<void> {
     const result = await window.api.file.saveAsDialog({ content, suggestedName: tab.title });
     if (!result) throw new Error('Save cancelled');
     const model = replaceModelUri(tab.uri, result.uri, content, result.languageId);
+    markModelSaved(model);
     if (activeTab()?.id === tab.id) {
       const { getEditor } = await import('./editorRegistry');
       getEditor()?.setModel(model);
@@ -97,9 +98,16 @@ export async function saveTab(tab: EditorTab): Promise<void> {
   }
 
   await runActiveTabSaveActions(tab);
-  await window.api.file.save({ path: tab.path, content: getModel(tab.uri)?.getValue() ?? content });
+  const savedModel = getModel(tab.uri);
+  // Snapshot the version with the content: edits made while writing stay unsaved.
+  const savedVersion = savedModel?.getAlternativeVersionId();
+  await window.api.file.save({ path: tab.path, content: savedModel?.getValue() ?? content });
   invalidateGitBaseline(tab.path);
   useEditorStore.getState().markSaved(tab.uri);
+  if (savedModel && !savedModel.isDisposed()) {
+    markModelSaved(savedModel, savedVersion);
+    if (isModelDirty(savedModel)) useEditorStore.getState().setDirty(tab.uri, true);
+  }
 }
 
 export async function saveActiveTab(): Promise<void> {
@@ -116,6 +124,27 @@ export async function saveAllTabs(): Promise<void> {
   }
 }
 
+/**
+ * Safety net before the unsaved-changes prompt: content identical to the file
+ * on disk has nothing to lose. Any doubt (read error, untitled) keeps the prompt.
+ */
+async function matchesFileOnDisk(tab: EditorTab): Promise<boolean> {
+  if (tab.uri.startsWith('untitled:')) return false;
+  const model = getModel(tab.uri);
+  if (!model) return false;
+  try {
+    const versionId = model.getAlternativeVersionId();
+    const file = await window.api.file.read(tab.path);
+    if (model.isDisposed() || model.getAlternativeVersionId() !== versionId) return false;
+    if (file.content !== model.getValue()) return false;
+    markModelSaved(model, versionId);
+    useEditorStore.getState().setDirty(tab.uri, false);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 export async function promptToSaveTab(
   staleTab: EditorTab,
 ): Promise<'saved' | 'discarded' | 'cancelled'> {
@@ -123,6 +152,7 @@ export async function promptToSaveTab(
   flushRichEdits(staleTab.uri);
   const tab = useEditorStore.getState().tabs.find((candidate) => candidate.id === staleTab.id) ?? staleTab;
   if (!tab.dirty) return 'discarded';
+  if (await matchesFileOnDisk(tab)) return 'discarded';
   const choice = await window.api.dialog.unsavedChanges(tab.title);
   if (choice === 'cancel') return 'cancelled';
   if (choice === 'discard') return 'discarded';

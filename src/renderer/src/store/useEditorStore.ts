@@ -50,7 +50,7 @@ interface EditorState {
   moveTabToGroup: (tabId: string, sourceGroupId: string, targetGroupId: string, targetIndex: number) => void;
   splitActive: (direction: 'vertical' | 'horizontal') => void;
   closeGroup: (id: string) => void;
-  markDirty: (uri: string) => void;
+  setDirty: (uri: string, dirty: boolean) => void;
   markSaved: (
     uri: string,
     savedAs?: { path: string; uri: string; languageId: LanguageId },
@@ -275,8 +275,12 @@ export const useEditorStore = create<EditorState>((set, get) => ({
       const activeGroupId = state.activeGroupId === id ? groups[0]!.id : state.activeGroupId;
       return { groups, activeGroupId, activeTabId: currentActiveTabId(groups, activeGroupId) };
     }),
-  markDirty: (uri) =>
-    set((state) => ({ tabs: state.tabs.map((tab) => (tab.uri === uri ? { ...tab, dirty: true } : tab)) })),
+  setDirty: (uri, dirty) =>
+    set((state) =>
+      state.tabs.some((tab) => tab.uri === uri && tab.dirty !== dirty)
+        ? { tabs: state.tabs.map((tab) => (tab.uri === uri ? { ...tab, dirty } : tab)) }
+        : {},
+    ),
   markSaved: (uri, savedAs) =>
     set((state) => {
       const savedTab = state.tabs.find((tab) => tab.uri === uri);
