@@ -27,13 +27,19 @@ export interface InlinePreviewProps {
   onShowSource: () => void;
 }
 
+function isFileTabWithExtension(tab: EditorTab | undefined, extension: RegExp): boolean {
+  return Boolean(tab && tab.uri.startsWith('file:') && extension.test(tab.path));
+}
+
 export function isSvgTab(tab: EditorTab | undefined): boolean {
-  return Boolean(tab && tab.uri.startsWith('file:') && /\.svg$/i.test(tab.path));
+  return isFileTabWithExtension(tab, /\.svg$/i);
 }
 
 export const inlinePreviews = {
   // SVG is text worth editing, but what it draws is what people open it for.
   svg: { label: 'SVG', defaultMode: 'preview', matches: isSvgTab },
+  // HTML is mostly edited: the rendered page is one toggle away.
+  html: { label: 'HTML', defaultMode: 'source', matches: (tab) => isFileTabWithExtension(tab, /\.html?$/i) },
   // "Preview to side" tabs are already a preview: only source tabs toggle.
   markdown: {
     label: 'Markdown',

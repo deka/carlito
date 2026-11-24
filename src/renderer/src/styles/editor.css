@@ -12,7 +12,8 @@
   min-height: 0;
 }
 
-.markdown-preview {
+.markdown-preview,
+.html-preview {
   display: grid;
   grid-template-rows: auto minmax(0, 1fr);
   height: 100%;
@@ -20,6 +21,13 @@
   min-height: 0;
   background: var(--bg);
   color: var(--fg);
+}
+
+.html-preview iframe {
+  width: 100%;
+  height: 100%;
+  border: 0;
+  background: #fff;
 }
 
 .preview-overlay {

@@ -85,6 +85,15 @@ function writeToClipboard(text: string): void {
   if (text) void navigator.clipboard.writeText(text).catch(console.error);
 }
 
+function pasteFromClipboard(terminal: Terminal): void {
+  void navigator.clipboard
+    .readText()
+    .then((text) => {
+      if (text) terminal.paste(text);
+    })
+    .catch(console.error);
+}
+
 function createSession(uri: string): TerminalSession {
   const id = terminalIdFromUri(uri);
   const terminal = new Terminal({
@@ -109,10 +118,7 @@ function createSession(uri: string): TerminalSession {
     }
     if (event.code === 'KeyV') {
       event.preventDefault();
-      void navigator.clipboard
-        .readText()
-        .then((text) => terminal.paste(text))
-        .catch(console.error);
+      pasteFromClipboard(terminal);
       return false;
     }
     return true;
@@ -206,6 +212,43 @@ export function attachTerminal(uri: string, container: HTMLElement): () => void 
 
 export function focusTerminal(uri: string): void {
   sessions.get(terminalIdFromUri(uri))?.terminal.focus();
+}
+
+function terminalFor(uri: string): Terminal | undefined {
+  return sessions.get(terminalIdFromUri(uri))?.terminal;
+}
+
+/** Context-menu actions. Each one gives keyboard focus back to the terminal. */
+export function terminalHasSelection(uri: string): boolean {
+  return terminalFor(uri)?.hasSelection() ?? false;
+}
+
+export function copyTerminalSelection(uri: string): void {
+  const terminal = terminalFor(uri);
+  if (!terminal) return;
+  writeToClipboard(terminal.getSelection());
+  terminal.focus();
+}
+
+export function pasteIntoTerminal(uri: string): void {
+  const terminal = terminalFor(uri);
+  if (!terminal) return;
+  pasteFromClipboard(terminal);
+  terminal.focus();
+}
+
+export function selectAllTerminal(uri: string): void {
+  const terminal = terminalFor(uri);
+  if (!terminal) return;
+  terminal.selectAll();
+  terminal.focus();
+}
+
+export function clearTerminal(uri: string): void {
+  const terminal = terminalFor(uri);
+  if (!terminal) return;
+  terminal.clear();
+  terminal.focus();
 }
 
 // Shell output and exit, routed to their sessions.

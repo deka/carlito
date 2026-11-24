@@ -134,7 +134,7 @@ export function registerEditorCommands(): void {
   });
   registerCommand({
     id: 'markdown.togglePreview',
-    title: 'Toggle Preview (Markdown, SVG)',
+    title: 'Toggle Preview (Markdown, SVG, HTML)',
     keybinding: 'Ctrl+Alt+V',
     run: toggleInlinePreview,
   });
