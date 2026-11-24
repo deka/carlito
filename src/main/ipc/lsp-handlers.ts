@@ -9,7 +9,12 @@ function managerFor(sender: WebContents): LspServerManager {
   const webContentsId = sender.id;
   let manager = managers.get(webContentsId);
   if (!manager) {
-    manager = new LspServerManager((channel, payload) => sender.send(channel, payload));
+    // Servers are killed when the window goes away, but their `exit` (and any
+    // trailing stdout/stderr) arrives asynchronously, after the WebContents is
+    // destroyed; sending then throws "Object has been destroyed".
+    manager = new LspServerManager((channel, payload) => {
+      if (!sender.isDestroyed()) sender.send(channel, payload);
+    });
     managers.set(webContentsId, manager);
     sender.once('destroyed', () => {
       manager?.stopAll();
