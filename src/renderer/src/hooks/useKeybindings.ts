@@ -7,6 +7,7 @@ import {
   runCommand,
 } from '../commands/registry';
 import { isTerminalElement } from '../terminal/terminalTabs';
+import { openRecentWorkspace } from '../utils/recentWorkspaces';
 
 type KeyDescriptor = ReturnType<typeof parseKeybinding>;
 
@@ -77,10 +78,14 @@ export function useKeybindings(): void {
     void ensureCommandsLoaded().then(buildBindings);
 
     const offMenu = window.api.menu.onCommand((commandId) => void runCommand(commandId));
+    const offOpenRecent = window.api.workspace.recent.onOpenRequested(
+      ({ path }) => void openRecentWorkspace(path),
+    );
     window.addEventListener('keydown', onKeyDown, true);
     return () => {
       window.removeEventListener('keydown', onKeyDown, true);
       offMenu();
+      offOpenRecent();
     };
   }, []);
 }

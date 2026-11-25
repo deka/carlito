@@ -78,6 +78,25 @@ export interface WorkspaceFolderResult {
   name: string;
 }
 
+/** A recently opened workspace folder, as listed on the Welcome screen. */
+export interface RecentWorkspace {
+  /** Absolute folder path. */
+  path: string;
+  /** Folder name (falls back to the full path for a filesystem root). */
+  name: string;
+  /** Path shortened for display (`~` for the home directory). */
+  displayPath: string;
+}
+
+export interface RecentWorkspaceRequest {
+  path: string;
+}
+
+/** Sent to a window when File > Open Recent picks a folder for it. */
+export interface OpenRecentWorkspaceEvent {
+  path: string;
+}
+
 export type GitFileStatus =
   | 'added'
   | 'modified'

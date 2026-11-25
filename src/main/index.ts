@@ -7,6 +7,7 @@ import { registerConfigHandlers } from './ipc/config-handlers';
 import { registerFileHandlers } from './ipc/file-handlers';
 import { registerGitHandlers } from './ipc/git-handlers';
 import { registerLspHandlers } from './ipc/lsp-handlers';
+import { registerRecentWorkspaceHandlers } from './ipc/recent-workspace-handlers';
 import { registerTerminalHandlers } from './ipc/terminal-handlers';
 import { registerWindowHandlers } from './ipc/window-handlers';
 import { registerUpdateHandlers } from './update/update-service';
@@ -34,6 +35,7 @@ if (!gotSingleInstanceLock) {
   registerFileHandlers();
   registerGitHandlers();
   registerLspHandlers();
+  registerRecentWorkspaceHandlers();
   registerTerminalHandlers();
   registerWindowHandlers();
   registerUpdateHandlers();

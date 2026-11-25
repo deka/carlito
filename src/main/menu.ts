@@ -1,6 +1,9 @@
 import { BrowserWindow, Menu, ipcMain, type MenuItemConstructorOptions } from 'electron';
 import { APP_MENU_LABELS, type MenuPopupRequest } from '@shared/app-menu';
+import type { OpenRecentWorkspaceEvent } from '@shared/file-types';
 import { IPC } from '@shared/ipc';
+import { clearRecentWorkspaces, onRecentWorkspacesChanged, recentWorkspaces } from './config/app-state';
+import { toRecentWorkspace } from './ipc/recent-workspace-handlers';
 
 /**
  * On Linux/Windows the native menu bar is hidden and its top-level entries are drawn
@@ -9,10 +12,48 @@ import { IPC } from '@shared/ipc';
  */
 export const useInAppMenuBar = process.platform !== 'darwin';
 
+function targetWindow(): BrowserWindow | undefined {
+  return BrowserWindow.getFocusedWindow() ?? BrowserWindow.getAllWindows().at(-1);
+}
+
+/** Native menu labels treat `&` as a mnemonic marker. */
+function escapeMenuLabel(label: string): string {
+  return label.replace(/&/g, '&&');
+}
+
+function openRecentSubmenu(): MenuItemConstructorOptions[] {
+  // Built from the cached list (no filesystem access); missing folders are handled on click.
+  const entries = recentWorkspaces().map((path): MenuItemConstructorOptions => {
+    const recent = toRecentWorkspace(path);
+    return {
+      label: escapeMenuLabel(`${recent.name}  —  ${recent.displayPath}`),
+      click: () => {
+        const payload: OpenRecentWorkspaceEvent = { path };
+        targetWindow()?.webContents.send(IPC.workspaceRecentOpenRequested, payload);
+      },
+    };
+  });
+  return [
+    ...(entries.length > 0 ? entries : [{ label: 'No Recent Folders', enabled: false }]),
+    { type: 'separator' },
+    {
+      label: 'Clear Recently Opened',
+      enabled: entries.length > 0,
+      click: () => clearRecentWorkspaces(),
+    },
+  ];
+}
+
+let rebuildsOnRecentChange = false;
+
 export function installAppMenu(): void {
+  if (!rebuildsOnRecentChange) {
+    // Open Recent is baked into the template: rebuild the whole menu when the list changes.
+    rebuildsOnRecentChange = true;
+    onRecentWorkspacesChanged(installAppMenu);
+  }
   const sendCommand = (commandId: string) => {
-    const win = BrowserWindow.getFocusedWindow() ?? BrowserWindow.getAllWindows().at(-1);
-    win?.webContents.send(IPC.menuCommand, { commandId });
+    targetWindow()?.webContents.send(IPC.menuCommand, { commandId });
   };
   const template: MenuItemConstructorOptions[] = [
     {
@@ -25,6 +66,7 @@ export function installAppMenu(): void {
           accelerator: 'CmdOrCtrl+K',
           click: () => sendCommand('workspace.openFolder'),
         },
+        { label: 'Open Recent', submenu: openRecentSubmenu() },
         { type: 'separator' },
         { label: 'Save', accelerator: 'CmdOrCtrl+S', click: () => sendCommand('file.save') },
         {
@@ -211,6 +253,10 @@ export function installAppMenu(): void {
     },
   ];
   Menu.setApplicationMenu(Menu.buildFromTemplate(template));
+  // Rebuilds re-attach the menu to open windows; keep the native bar hidden there.
+  if (useInAppMenuBar) {
+    for (const win of BrowserWindow.getAllWindows()) win.setMenuBarVisibility(false);
+  }
 }
 
 export function registerMenuHandlers(): void {

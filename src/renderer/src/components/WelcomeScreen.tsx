@@ -1,4 +1,8 @@
+import { useEffect, useState } from 'react';
+import type { RecentWorkspace } from '@shared/file-types';
 import { runCommand } from '../commands/registry';
+import { useEditorStore } from '../store/useEditorStore';
+import { openRecentWorkspace } from '../utils/recentWorkspaces';
 
 const shortcuts = [
   { label: 'Open a file', detail: 'Start with something local', keys: 'Ctrl O', command: 'file.open', icon: 'file' },
@@ -67,17 +71,20 @@ export function WelcomeScreen() {
           <h1>Code at the<br /><em>speed of thought.</em></h1>
           <p className="welcome-subtitle">A precise, beautifully quiet space for making exceptional software.</p>
         </div>
-        <div className="welcome-actions">
-          {shortcuts.map((shortcut) => (
-            <button key={shortcut.command} onClick={() => void runCommand(shortcut.command)}>
-              <span className="welcome-action-icon">{actionIcons[shortcut.icon]}</span>
-              <span className="welcome-action-copy">
-                <strong>{shortcut.label}</strong>
-                <small>{shortcut.detail}</small>
-              </span>
-              {shortcut.keys ? <kbd>{shortcut.keys}</kbd> : null}
-            </button>
-          ))}
+        <div className="welcome-side">
+          <div className="welcome-actions">
+            {shortcuts.map((shortcut) => (
+              <button key={shortcut.command} onClick={() => void runCommand(shortcut.command)}>
+                <span className="welcome-action-icon">{actionIcons[shortcut.icon]}</span>
+                <span className="welcome-action-copy">
+                  <strong>{shortcut.label}</strong>
+                  <small>{shortcut.detail}</small>
+                </span>
+                {shortcut.keys ? <kbd>{shortcut.keys}</kbd> : null}
+              </button>
+            ))}
+          </div>
+          <RecentWorkspaces />
         </div>
         <figure className="welcome-quote">
           <blockquote>“{quote.text}”</blockquote>
@@ -88,5 +95,63 @@ export function WelcomeScreen() {
         </p>
       </div>
     </div>
+  );
+}
+
+const maxRecentShown = 5;
+
+function RecentWorkspaces() {
+  const [recent, setRecent] = useState<RecentWorkspace[]>([]);
+  const currentRoot = useEditorStore((state) => state.workspace?.rootPath);
+
+  useEffect(() => {
+    let disposed = false;
+    const refresh = () => {
+      window.api.workspace.recent
+        .list()
+        .then((list) => {
+          if (!disposed) setRecent(list);
+        })
+        .catch(console.error);
+    };
+    refresh();
+    const off = window.api.workspace.recent.onChanged(refresh);
+    return () => {
+      disposed = true;
+      off();
+    };
+  }, []);
+
+  const entries = recent.filter((entry) => entry.path !== currentRoot).slice(0, maxRecentShown);
+  if (entries.length === 0) return null;
+
+  return (
+    <section className="welcome-recent" aria-label="Recent folders">
+      <h2>Recent</h2>
+      <ul>
+        {entries.map((entry) => (
+          <li key={entry.path}>
+            <button
+              type="button"
+              className="welcome-recent-open"
+              title={entry.path}
+              onClick={() => void openRecentWorkspace(entry.path)}
+            >
+              <strong>{entry.name}</strong>
+              <small>{entry.displayPath}</small>
+            </button>
+            <button
+              type="button"
+              className="welcome-recent-remove"
+              title="Remove from Recent"
+              aria-label={`Remove ${entry.name} from Recent`}
+              onClick={() => void window.api.workspace.recent.remove(entry.path).catch(console.error)}
+            >
+              ×
+            </button>
+          </li>
+        ))}
+      </ul>
+    </section>
   );
 }
