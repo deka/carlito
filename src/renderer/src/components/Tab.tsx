@@ -31,6 +31,15 @@ export function Tab({
     <div
       className={`tab ${active ? 'active' : ''} ${tab.dirty ? 'dirty' : ''} ${dragging ? 'dragging' : ''} ${dropPosition ? `drop-${dropPosition}` : ''}`}
       onContextMenu={onContextMenu}
+      // Middle click closes the tab. Keep the editor focused (mousedown) and cancel
+      // the Linux primary-selection paste Chromium runs on mouseup: it would land in
+      // the focused editor and really modify the file being closed.
+      onMouseDown={(event) => {
+        if (event.button === 1) event.preventDefault();
+      }}
+      onMouseUp={(event) => {
+        if (event.button === 1) event.preventDefault();
+      }}
       onDragOver={onDragOver}
       onDrop={onDrop}
     >
@@ -46,9 +55,6 @@ export function Tab({
           event.preventDefault();
           event.stopPropagation();
           onClose();
-        }}
-        onMouseDown={(event) => {
-          if (event.button === 1) event.preventDefault();
         }}
         title={tab.path}
       >
