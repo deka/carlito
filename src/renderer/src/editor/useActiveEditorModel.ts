@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react';
 import * as monaco from '@codingame/monaco-vscode-editor-api';
-import { activeTabInGroup } from '../store/useEditorStore';
+import { activeTabInGroup, useEditorStore } from '../store/useEditorStore';
 import { updateGitGutter } from './gitGutter';
 import { getModel } from './models';
 import {
@@ -34,6 +34,9 @@ export function useActiveEditorModel({
     const model = tab ? (getModel(tab.uri) ?? null) : null;
     editor.setModel(model);
     requestAnimationFrame(() => editor.layout());
+    if (tab && model && model.getLanguageId() !== tab.languageId) {
+      useEditorStore.getState().setTabLanguage(tab.uri, model.getLanguageId());
+    }
     if (tab) {
       editor.restoreViewState(viewStates.current.get(tab.uri) ?? null);
       const pendingReveal = getPendingReveal(groupId);

@@ -72,10 +72,18 @@ export function languageServerFor(languageId: LanguageId): LanguageServerConfig 
   return languageConfig.languageServers[languageId];
 }
 
+/** `.env`, `.env.local`, `production.env`…: no bundled grammar claims them; KEY=VALUE fits `properties`. */
+function isDotenvFile(filePath: string): boolean {
+  const name = filePath.slice(Math.max(filePath.lastIndexOf('/'), filePath.lastIndexOf('\\')) + 1).toLowerCase();
+  return name === '.env' || name.startsWith('.env.') || name.endsWith('.env');
+}
+
 export function languageIdFromPath(filePath: string): LanguageId {
   const dot = filePath.lastIndexOf('.');
   const extension = dot >= 0 ? filePath.slice(dot).toLowerCase() : '';
-  const languageId = languageConfig.extensions[extension] ?? 'plaintext';
+  const configured = languageConfig.extensions[extension];
+  if (configured === undefined && isDotenvFile(filePath)) return 'properties';
+  const languageId = configured ?? 'plaintext';
 
   // Older generated configs mapped JSX-bearing extensions to the plain TS/JS
   // language ids. Upgrade those legacy values at lookup time so Monaco and the

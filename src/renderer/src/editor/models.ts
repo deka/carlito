@@ -26,7 +26,13 @@ export function getOrCreateModel(
 ): monaco.editor.ITextModel {
   const existing = models.get(uri);
   if (existing) return existing;
-  const model = monaco.editor.createModel(content, languageId, monaco.Uri.parse(uri));
+  // `plaintext` only means the configured extension map has no entry: let the bundled VS Code
+  // language contributions pick one from the file name, extension or first line (YAML, Dockerfile…).
+  const model = monaco.editor.createModel(
+    content,
+    languageId === 'plaintext' ? undefined : languageId,
+    monaco.Uri.parse(uri),
+  );
   markModelSaved(model);
   models.set(uri, model);
   return model;
