@@ -1,6 +1,5 @@
 import { ipcRenderer } from 'electron';
 import type { CarloUserConfig } from '@shared/app-config';
-import type { MenuPopupRequest } from '@shared/app-menu';
 import { IPC } from '@shared/ipc';
 import type {
   FileCopyRequest,
@@ -18,7 +17,6 @@ import type {
   GitStatusResult,
   GitBranchResult,
   OpenFileResult,
-  OpenRecentWorkspaceEvent,
   ReadFileDataUrlResult,
   ReadPdfResult,
   ReadFileResult,
@@ -65,6 +63,8 @@ export const api = Object.freeze({
         | { ok: true; path: string; warning?: string }
         | { ok: false; error: string; instructions?: string }
       >,
+    /** Quit Carlo; each window still gets a chance to save unsaved changes. */
+    quit: () => ipcRenderer.invoke(IPC.appQuit) as Promise<{ ok: true }>,
   },
   update: {
     state: () => ipcRenderer.invoke(IPC.updateState) as Promise<UpdateState>,
@@ -78,7 +78,6 @@ export const api = Object.freeze({
   },
   config: {
     language: () => ipcRenderer.invoke(IPC.configLanguage) as Promise<LanguageConfig>,
-    languagePath: () => ipcRenderer.invoke(IPC.configLanguagePath) as Promise<{ path: string }>,
     user: () => ipcRenderer.invoke(IPC.configUser) as Promise<CarloUserConfig>,
     saveUser: (config: CarloUserConfig) =>
       ipcRenderer.invoke(IPC.configUserSave, config) as Promise<CarloUserConfig>,
@@ -131,6 +130,7 @@ export const api = Object.freeze({
     zoomIn: () => ipcRenderer.invoke(IPC.windowZoomIn) as Promise<{ zoomLevel: number }>,
     zoomOut: () => ipcRenderer.invoke(IPC.windowZoomOut) as Promise<{ zoomLevel: number }>,
     zoomReset: () => ipcRenderer.invoke(IPC.windowZoomReset) as Promise<{ zoomLevel: number }>,
+    toggleDevTools: () => ipcRenderer.invoke(IPC.windowToggleDevTools) as Promise<{ ok: true }>,
     closeProceed: () => ipcRenderer.invoke(IPC.windowCloseProceed) as Promise<{ ok: true }>,
     closeCancel: () => ipcRenderer.invoke(IPC.windowCloseCancel) as Promise<{ ok: true }>,
     onCloseRequested: (cb: () => void) => on<void>(IPC.windowCloseRequested, cb),
@@ -161,8 +161,6 @@ export const api = Object.freeze({
         ipcRenderer.invoke(IPC.workspaceRecentRemove, { path }) as Promise<{ ok: true }>,
       clear: () => ipcRenderer.invoke(IPC.workspaceRecentClear) as Promise<{ ok: true }>,
       onChanged: (cb: () => void) => on<void>(IPC.workspaceRecentChanged, cb),
-      onOpenRequested: (cb: (event: OpenRecentWorkspaceEvent) => void) =>
-        on<OpenRecentWorkspaceEvent>(IPC.workspaceRecentOpenRequested, cb),
     },
   },
   lsp: {
@@ -191,13 +189,6 @@ export const api = Object.freeze({
     kill: (id: string) => ipcRenderer.invoke(IPC.terminalKill, { id }) as Promise<{ ok: true }>,
     onData: (cb: (event: TerminalDataEvent) => void) => on<TerminalDataEvent>(IPC.terminalData, cb),
     onExit: (cb: (event: TerminalExitEvent) => void) => on<TerminalExitEvent>(IPC.terminalExit, cb),
-  },
-  menu: {
-    inAppMenuBar: process.platform !== 'darwin',
-    popup: (request: MenuPopupRequest) =>
-      ipcRenderer.invoke(IPC.menuPopup, request) as Promise<{ ok: boolean }>,
-    onCommand: (cb: (commandId: string) => void) =>
-      on<{ commandId: string }>(IPC.menuCommand, ({ commandId }) => cb(commandId)),
   },
   theme: {
     onOsChanged: (cb: (payload: { shouldUseDark: boolean }) => void) => on(IPC.themeOsChanged, cb),

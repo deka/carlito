@@ -6,8 +6,25 @@ export function UpdateIndicator() {
 
   useEffect(startUpdateSync, []);
 
-  if (!update?.latestVersion) return null;
-  const { phase, latestVersion } = update;
+  if (!update) return null;
+  const { phase, latestVersion, currentVersion } = update;
+  const pending = phase === 'available' || phase === 'installed' || phase === 'downloading' || phase === 'installing';
+
+  // Nothing to install: the version doubles as the manual "Check for Updates" entry point.
+  if (!latestVersion || !pending) {
+    const checking = phase === 'checking';
+    return (
+      <button
+        className="status-item status-button status-version"
+        type="button"
+        disabled={checking}
+        onClick={() => void window.api.update.check(true).catch(console.error)}
+        title={checking ? 'Checking for updates…' : `Carlo ${currentVersion}. Click to check for updates.`}
+      >
+        {checking ? 'Checking…' : `v${currentVersion}`}
+      </button>
+    );
+  }
 
   if (phase === 'downloading' || phase === 'installing') {
     return (
@@ -18,7 +35,6 @@ export function UpdateIndicator() {
     );
   }
 
-  if (phase !== 'available' && phase !== 'installed') return null;
   const installed = phase === 'installed';
 
   return (

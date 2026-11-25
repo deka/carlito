@@ -1,6 +1,7 @@
 import { runCommand } from '../commands/registry';
 import { useBottomPanelStore } from '../store/useBottomPanelStore';
 import { useWorkbenchUiStore } from '../store/useWorkbenchUiStore';
+import { WorkspaceMenuButton } from './WorkspaceMenu';
 
 const icons = {
   explorer: (
@@ -23,10 +24,10 @@ const icons = {
       <path d="M7 7.5v9M9 13c4.5 0 8-1.2 8-2.5" />
     </svg>
   ),
-  settings: (
+  terminal: (
     <svg viewBox="0 0 24 24" aria-hidden="true">
-      <circle cx="12" cy="12" r="3" />
-      <path d="M12 3.75v2M12 18.25v2M3.75 12h2M18.25 12h2M6.17 6.17l1.42 1.42M16.41 16.41l1.42 1.42M17.83 6.17l-1.42 1.42M7.59 16.41l-1.42 1.42" />
+      <rect x="3.75" y="5" width="16.5" height="14" rx="2.25" />
+      <path d="m7.5 10 2.5 2.25-2.5 2.25M12 15h4.5" />
     </svg>
   ),
 };
@@ -63,23 +64,24 @@ export function ActivityBar() {
           className={`activity-bar-button ${activePanel === 'git' ? 'active' : ''}`}
           type="button"
           onClick={() => void runCommand('workbench.panel.git.toggle')}
-          title="Source Control"
+          title="Source Control (Ctrl+Shift+G)"
           aria-label="Toggle Source Control"
           aria-pressed={activePanel === 'git'}
         >
           {icons.branch}
         </button>
-      </div>
-      <div className="activity-bar-secondary">
         <button
           className="activity-bar-button"
           type="button"
-          onClick={() => void runCommand('preferences.openSettings')}
-          title="Settings"
-          aria-label="Open Settings"
+          onClick={() => void runCommand('workbench.action.terminal.new')}
+          title="New Terminal (Ctrl+Shift+T)"
+          aria-label="New Terminal"
         >
-          {icons.settings}
+          {icons.terminal}
         </button>
+      </div>
+      <div className="activity-bar-secondary">
+        <WorkspaceMenuButton />
       </div>
     </nav>
   );

@@ -1,6 +1,6 @@
 import { useEditorStore } from '../store/useEditorStore';
 
-/** Switch this window to a folder from the recent list (Welcome screen, File > Open Recent). */
+/** Switch this window to a folder from the recent list (Welcome screen, workspace menu). */
 export async function openRecentWorkspace(path: string): Promise<void> {
   try {
     const folder = await window.api.workspace.recent.open(path);

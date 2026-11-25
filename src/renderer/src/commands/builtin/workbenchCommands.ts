@@ -10,6 +10,7 @@ export function registerWorkbenchCommands(): void {
   registerCommand({
     id: 'workspace.openFolder',
     title: 'Open Folder',
+    keybinding: 'Ctrl+K',
     run: async () => {
       const folder = await window.api.workspace.openFolderDialog();
       if (folder) useEditorStore.getState().setWorkspace(folder);

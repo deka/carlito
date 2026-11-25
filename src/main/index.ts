@@ -12,7 +12,7 @@ import { registerTerminalHandlers } from './ipc/terminal-handlers';
 import { registerWindowHandlers } from './ipc/window-handlers';
 import { registerUpdateHandlers } from './update/update-service';
 import { registerLocalResourceProtocol, registerLocalResourceScheme } from './local-resource-protocol';
-import { installAppMenu, registerMenuHandlers } from './menu';
+import { installAppMenu } from './menu';
 import { initialWorkspacePath } from './workspace';
 import { createWindow } from './window';
 
@@ -40,7 +40,6 @@ if (!gotSingleInstanceLock) {
   registerWindowHandlers();
   registerUpdateHandlers();
   installAppMenu();
-  registerMenuHandlers();
 
   app.on('second-instance', (_event, argv, workingDirectory) => {
     const win = createWindow({ initialWorkspacePath: initialWorkspacePath(argv, workingDirectory) });

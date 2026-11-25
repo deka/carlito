@@ -1,18 +1,18 @@
 import { lazy, Suspense, useEffect, useState } from 'react';
 import { ActivityBar } from './components/ActivityBar';
-import { AppTitleBar } from './components/AppTitleBar';
 import { FileTree } from './components/FileTree';
 import { BottomPanel } from './components/BottomPanel';
 import { SettingsPanel } from './components/SettingsPanel';
 import { StatusBar } from './components/StatusBar';
 import { TabBar } from './components/TabBar';
 import { WelcomeScreen } from './components/WelcomeScreen';
+import { titleFromState } from './components/appTitleUtils';
 import { InlinePreview } from './components/preview/InlinePreviewOverlay';
 import { ensureVscodeServices, loadAfterVscodeServices } from './vscode/servicesReady';
 import { useKeybindings } from './hooks/useKeybindings';
 import { useSidebarResize } from './hooks/useSidebarResize';
 import { useWorkspaceExternalChanges } from './hooks/useWorkspaceExternalChanges';
-import { activeTabInGroup, useEditorStore } from './store/useEditorStore';
+import { activeTabInGroup, useActiveTab, useEditorStore } from './store/useEditorStore';
 import { useSettingsStore } from './store/useSettingsStore';
 import { useThemeStore } from './store/useThemeStore';
 import { useWorkbenchUiStore } from './store/useWorkbenchUiStore';
@@ -43,6 +43,13 @@ export function App() {
   const groups = useEditorStore((state) => state.groups);
   const splitDirection = useEditorStore((state) => state.splitDirection);
   const sidebarVisible = useWorkbenchUiStore((state) => state.sidebarVisible);
+  const activeGroupId = useEditorStore((state) => state.activeGroupId);
+  const workspaceName = useEditorStore((state) => state.workspace?.name);
+  const activeTab = useActiveTab();
+  // There is no in-app title bar: the native window title carries the context.
+  useEffect(() => {
+    document.title = titleFromState();
+  }, [activeTab?.title, activeTab?.dirty, workspaceName, activeGroupId]);
   const { sidebarWidth, pointerHandlers } = useSidebarResize({
     minWidth: 210,
     maxWidth: 560,
@@ -81,14 +88,13 @@ export function App() {
   }, []);
   return (
     <main
-      className={`app-shell ${window.api.menu.inAppMenuBar ? 'in-app-menubar' : ''}`}
+      className="app-shell"
       style={{
         gridTemplateColumns: sidebarVisible
           ? `${activityBarWidth}px ${sidebarWidth}px 4px minmax(0, 1fr)`
           : `${activityBarWidth}px 0 0 minmax(0, 1fr)`,
       }}
     >
-      <AppTitleBar />
       <ActivityBar />
       {sidebarVisible ? <FileTree /> : null}
       {sidebarVisible ? (
