@@ -8,7 +8,7 @@ import { openRecentWorkspace } from '../utils/recentWorkspaces';
 
 const maxRecentShown = 8;
 
-/** Activity bar button (bottom) opening the workspace menu: folders, recents, settings. */
+/** Activity bar button (bottom) opening the workspace menu: command palette, folders, recents, settings. */
 export function WorkspaceMenuButton() {
   const workspaceName = useEditorStore((state) => state.workspace?.name);
   const [anchor, setAnchor] = useState<{ x: number; y: number } | null>(null);
@@ -69,6 +69,11 @@ function WorkspaceMenu({ x, y, onClose }: { x: number; y: number; onClose: () =>
         <strong>{workspace?.name ?? 'No folder open'}</strong>
         {workspace ? <small>{current?.displayPath ?? workspace.rootPath}</small> : null}
       </div>
+      <div className="workspace-menu-separator" />
+      <button type="button" role="menuitem" onClick={() => run(() => runCommand('workbench.action.showCommands'))}>
+        <span>Command Palette…</span>
+        <kbd>Ctrl Shift P</kbd>
+      </button>
       <div className="workspace-menu-separator" />
       <button type="button" role="menuitem" onClick={() => run(() => runCommand('workspace.openFolder'))}>
         <span>Open Folder…</span>
