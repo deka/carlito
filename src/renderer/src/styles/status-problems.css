@@ -1,6 +1,6 @@
 .status-bar {
   grid-column: 1 / -1;
-  grid-row: 3;
+  grid-row: 2;
   display: flex;
   gap: 12px;
   align-items: center;
@@ -94,6 +94,9 @@
   stroke-linejoin: round;
   stroke-width: 1.5;
 }
+.status-version { color: var(--muted); font-variant-numeric: tabular-nums; }
+.status-version:disabled { cursor: default; }
+.status-version:disabled:hover { background: transparent; color: var(--muted); }
 .status-update-busy { color: var(--muted-strong); font-weight: 400; }
 .status-update-busy svg { animation: status-update-pulse 1.2s ease-in-out infinite; }
 @keyframes status-update-pulse { 50% { opacity: 0.35; } }

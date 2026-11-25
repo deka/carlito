@@ -92,11 +92,6 @@ export interface RecentWorkspaceRequest {
   path: string;
 }
 
-/** Sent to a window when File > Open Recent picks a folder for it. */
-export interface OpenRecentWorkspaceEvent {
-  path: string;
-}
-
 export type GitFileStatus =
   | 'added'
   | 'modified'

@@ -51,6 +51,8 @@ interface EditorState {
   splitActive: (direction: 'vertical' | 'horizontal') => void;
   closeGroup: (id: string) => void;
   setDirty: (uri: string, dirty: boolean) => void;
+  /** Record the language Monaco actually picked for a file (it may refine a `plaintext` guess). */
+  setTabLanguage: (uri: string, languageId: LanguageId) => void;
   markSaved: (
     uri: string,
     savedAs?: { path: string; uri: string; languageId: LanguageId },
@@ -279,6 +281,12 @@ export const useEditorStore = create<EditorState>((set, get) => ({
     set((state) =>
       state.tabs.some((tab) => tab.uri === uri && tab.dirty !== dirty)
         ? { tabs: state.tabs.map((tab) => (tab.uri === uri ? { ...tab, dirty } : tab)) }
+        : {},
+    ),
+  setTabLanguage: (uri, languageId) =>
+    set((state) =>
+      state.tabs.some((tab) => tab.uri === uri && tab.languageId !== languageId)
+        ? { tabs: state.tabs.map((tab) => (tab.uri === uri ? { ...tab, languageId } : tab)) }
         : {},
     ),
   markSaved: (uri, savedAs) =>

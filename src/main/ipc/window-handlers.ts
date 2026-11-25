@@ -65,6 +65,17 @@ export function registerWindowHandlers(): void {
     return { zoomLevel: 0 };
   });
 
+  ipcMain.handle(IPC.windowToggleDevTools, (event) => {
+    event.sender.toggleDevTools();
+    return { ok: true };
+  });
+
+  ipcMain.handle(IPC.appQuit, () => {
+    // Deferred so the reply reaches the renderer before windows start closing.
+    setImmediate(() => app.quit());
+    return { ok: true };
+  });
+
   ipcMain.handle(IPC.dialogUnsavedChanges, async (event, { name }: { name: string }) => {
     const win = BrowserWindow.fromWebContents(event.sender);
     const options = {

@@ -1,6 +1,5 @@
-import { useEffect, useState } from 'react';
-import type { RecentWorkspace } from '@shared/file-types';
 import { runCommand } from '../commands/registry';
+import { useRecentWorkspaces } from '../hooks/useRecentWorkspaces';
 import { useEditorStore } from '../store/useEditorStore';
 import { openRecentWorkspace } from '../utils/recentWorkspaces';
 
@@ -101,26 +100,8 @@ export function WelcomeScreen() {
 const maxRecentShown = 5;
 
 function RecentWorkspaces() {
-  const [recent, setRecent] = useState<RecentWorkspace[]>([]);
+  const recent = useRecentWorkspaces();
   const currentRoot = useEditorStore((state) => state.workspace?.rootPath);
-
-  useEffect(() => {
-    let disposed = false;
-    const refresh = () => {
-      window.api.workspace.recent
-        .list()
-        .then((list) => {
-          if (!disposed) setRecent(list);
-        })
-        .catch(console.error);
-    };
-    refresh();
-    const off = window.api.workspace.recent.onChanged(refresh);
-    return () => {
-      disposed = true;
-      off();
-    };
-  }, []);
 
   const entries = recent.filter((entry) => entry.path !== currentRoot).slice(0, maxRecentShown);
   if (entries.length === 0) return null;

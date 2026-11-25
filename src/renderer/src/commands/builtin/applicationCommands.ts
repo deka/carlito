@@ -46,6 +46,22 @@ export function registerApplicationCommands(): void {
     },
   });
   registerCommand({
+    id: 'app.quit',
+    title: 'Quit Carlo',
+    keybinding: 'Ctrl+Q',
+    run: async () => {
+      await window.api.app.quit();
+    },
+  });
+  registerCommand({
+    id: 'app.toggleDevTools',
+    title: 'Developer: Toggle Developer Tools',
+    keybinding: 'Ctrl+Shift+I',
+    run: async () => {
+      await window.api.window.toggleDevTools();
+    },
+  });
+  registerCommand({
     id: 'window.zoomIn',
     title: 'Zoom In',
     keybinding: 'Ctrl+=',
