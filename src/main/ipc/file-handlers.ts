@@ -12,14 +12,14 @@ import {
   pathExists,
   uniqueCopyDestination,
 } from './file-operations';
-import { rememberLastWorkspacePath } from '../config/app-state';
+import { rememberWorkspace } from '../config/app-state';
 import { getGitStatusContext } from './git-status';
 import { searchWorkspace } from './workspace-search';
 import {
   authorizeWindowPath,
   ensureWorkspaceWatcher,
+  openWindowWorkspace,
   registerAllowedFile,
-  setWindowWorkspaceRoot,
   watchWorkspaceDirectory,
   windowFromEvent,
   workspaceRootFor,
@@ -271,18 +271,14 @@ export function registerFileHandlers(): void {
     const win = windowFromEvent(event);
     const result = await dialog.showOpenDialog(win, { properties: ['openDirectory'] });
     if (result.canceled || result.filePaths.length === 0) return null;
-    const rootPath = result.filePaths[0]!;
-    setWindowWorkspaceRoot(win, rootPath);
-    ensureWorkspaceWatcher(win, rootPath);
-    rememberLastWorkspacePath(rootPath);
-    return { rootPath, rootUri: pathToFileURL(rootPath).toString(), name: basename(rootPath) };
+    return openWindowWorkspace(win, result.filePaths[0]!);
   });
 
   ipcMain.handle(IPC.workspaceCurrentFolder, async (event) => {
     const win = windowFromEvent(event);
     const rootPath = workspaceRootFor(win);
     ensureWorkspaceWatcher(win, rootPath);
-    rememberLastWorkspacePath(rootPath);
+    rememberWorkspace(rootPath);
     return { rootPath, rootUri: pathToFileURL(rootPath).toString(), name: basename(rootPath) };
   });
 

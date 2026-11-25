@@ -3,7 +3,7 @@ import { useWorkspaceChangeDebounce } from '../hooks/useWorkspaceChangeDebounce'
 import type { GitBranchInfo, GitChangedFile, GitFileStatus } from '@shared/file-types';
 import { useEditorStore } from '../store/useEditorStore';
 import { useBottomPanelStore } from '../store/useBottomPanelStore';
-import { GitFileList } from './GitFileList';
+import { GitFileList, type GitFileSection } from './GitFileList';
 import { statusLabels } from '../git/gitStatusMaps';
 import { branchDisplayName, branchSyncLabel, branchTitle, sameBranch } from '../git/gitBranch';
 import { useGitBranchStore } from '../store/useGitBranchStore';
@@ -39,9 +39,69 @@ function cachedState(rootPath: string | undefined): GitPanelState {
   return (rootPath && lastStateByRoot.get(rootPath)) || initialState;
 }
 
+// Draft commit message per workspace root, kept across panel unmounts.
+const draftMessageByRoot = new Map<string, string>();
+
 function sameFiles(a: GitChangedFile[], b: GitChangedFile[]): boolean {
   if (a.length !== b.length) return false;
-  return a.every((file, index) => file.path === b[index]!.path && file.status === b[index]!.status);
+  return a.every((file, index) => {
+    const other = b[index]!;
+    return (
+      file.path === other.path &&
+      file.status === other.status &&
+      file.staged === other.staged &&
+      file.unstaged === other.unstaged &&
+      file.originalPath === other.originalPath
+    );
+  });
+}
+
+type GitBusyAction = 'pull' | 'push' | 'stage' | 'unstage' | 'commit';
+
+/** Paths to hand to git for a file: unstaging a rename must also restore its source path. */
+function actionPaths(files: GitChangedFile[], section: GitFileSection): string[] {
+  const paths = new Set<string>();
+  for (const file of files) {
+    paths.add(file.path);
+    if (section === 'staged' && file.originalPath) paths.add(file.originalPath);
+  }
+  return [...paths];
+}
+
+interface GitSectionProps {
+  title: string;
+  section: GitFileSection;
+  files: GitChangedFile[];
+  disabled: boolean;
+  onAction: (files: GitChangedFile[], section: GitFileSection) => void;
+}
+
+function GitSection({ title, section, files, disabled, onAction }: GitSectionProps) {
+  const allTitle = section === 'staged' ? 'Unstage all changes' : 'Stage all changes';
+  return (
+    <div className="git-panel-section">
+      <div className="git-panel-section-header">
+        <span className="git-panel-section-title">{title}</span>
+        <span className="git-panel-section-count">{files.length}</span>
+        <button
+          className="git-panel-action git-panel-section-action"
+          type="button"
+          onClick={() => onAction(files, section)}
+          disabled={disabled}
+          title={allTitle}
+          aria-label={allTitle}
+        >
+          {section === 'staged' ? '−' : '+'}
+        </button>
+      </div>
+      <GitFileList
+        files={files}
+        section={section}
+        disabled={disabled}
+        onAction={(selected) => onAction(selected, section)}
+      />
+    </div>
+  );
 }
 
 export function GitPanel() {
@@ -49,8 +109,9 @@ export function GitPanel() {
   const closeGitPanel = useCallback(() => useBottomPanelStore.getState().closePanel(), []);
 
   const [state, setState] = useState<GitPanelState>(() => cachedState(rootPath));
-  const [pulling, setPulling] = useState(false);
-  const [pullMessage, setPullMessage] = useState<{ ok: boolean; text: string } | null>(null);
+  const [busy, setBusy] = useState<GitBusyAction | null>(null);
+  const [actionMessage, setActionMessage] = useState<{ ok: boolean; text: string } | null>(null);
+  const [draft, setDraftState] = useState(() => (rootPath && draftMessageByRoot.get(rootPath)) || '');
   // Monotonic id so a slow, outdated status response never overwrites a newer one.
   const requestIdRef = useRef(0);
   const rootPathRef = useRef(rootPath);
@@ -63,6 +124,19 @@ export function GitPanel() {
     for (const file of files) result.set(file.status, (result.get(file.status) ?? 0) + 1);
     return result;
   }, [files]);
+
+  const stagedFiles = useMemo(() => files.filter((file) => file.staged), [files]);
+  const unstagedFiles = useMemo(() => files.filter((file) => file.unstaged), [files]);
+
+  const setDraft = useCallback(
+    (message: string) => {
+      setDraftState(message);
+      if (!rootPath) return;
+      if (message) draftMessageByRoot.set(rootPath, message);
+      else draftMessageByRoot.delete(rootPath);
+    },
+    [rootPath],
+  );
 
   // Background refreshes keep the current list on screen (no "Loading…" swap)
   // and skip the state update entirely when nothing changed, so the panel does
@@ -110,30 +184,75 @@ export function GitPanel() {
   // mount as well as switching to a different folder).
   useEffect(() => {
     setState(cachedState(rootPath));
-    setPullMessage(null);
+    setActionMessage(null);
+    setDraftState((rootPath && draftMessageByRoot.get(rootPath)) || '');
     void refresh();
   }, [rootPath, refresh]);
 
   const debouncedRefresh = useCallback(() => void refresh(), [refresh]);
   useWorkspaceChangeDebounce(rootPath, debouncedRefresh, 180);
 
-  const pull = useCallback(async (): Promise<void> => {
-    if (!rootPath || pulling) return;
-    setPulling(true);
-    setPullMessage(null);
-    try {
-      const result = await window.api.git.pull(rootPath);
-      // The user switched workspace while pulling: the result is for another folder.
-      if (rootPathRef.current !== rootPath) return;
-      setPullMessage({ ok: result.ok, text: result.output || (result.ok ? 'Pull complete.' : 'git pull failed.') });
-    } catch (pullError) {
-      if (rootPathRef.current !== rootPath) return;
-      setPullMessage({ ok: false, text: pullError instanceof Error ? pullError.message : 'git pull failed.' });
-    } finally {
-      setPulling(false);
-    }
-    if (rootPathRef.current === rootPath) void refresh();
-  }, [rootPath, pulling, refresh]);
+  // Runs one git action at a time (they would collide on .git/index.lock),
+  // reports failures inline and refreshes the status afterwards.
+  const runAction = useCallback(
+    async (
+      action: GitBusyAction,
+      run: (root: string) => Promise<{ ok: boolean; output: string }>,
+      options: { showSuccess?: boolean; onSuccess?: () => void } = {},
+    ): Promise<void> => {
+      if (!rootPath || busy) return;
+      setBusy(action);
+      setActionMessage(null);
+      try {
+        const result = await run(rootPath);
+        // The user switched workspace meanwhile: the result is for another folder.
+        if (rootPathRef.current !== rootPath) return;
+        if (result.ok) options.onSuccess?.();
+        if (!result.ok || options.showSuccess) {
+          setActionMessage({ ok: result.ok, text: result.output || (result.ok ? `git ${action} complete.` : `git ${action} failed.`) });
+        }
+      } catch (actionError) {
+        if (rootPathRef.current !== rootPath) return;
+        setActionMessage({ ok: false, text: actionError instanceof Error ? actionError.message : `git ${action} failed.` });
+      } finally {
+        setBusy(null);
+      }
+      if (rootPathRef.current === rootPath) void refresh();
+    },
+    [rootPath, busy, refresh],
+  );
+
+  const pull = useCallback(
+    () => runAction('pull', (root) => window.api.git.pull(root), { showSuccess: true }),
+    [runAction],
+  );
+  const push = useCallback(
+    () => runAction('push', (root) => window.api.git.push(root), { showSuccess: true }),
+    [runAction],
+  );
+
+  const stageOrUnstage = useCallback(
+    (selected: GitChangedFile[], section: GitFileSection) => {
+      const paths = actionPaths(selected, section);
+      if (paths.length === 0) return;
+      void runAction(section === 'staged' ? 'unstage' : 'stage', (root) =>
+        section === 'staged'
+          ? window.api.git.unstage({ rootPath: root, paths })
+          : window.api.git.stage({ rootPath: root, paths }),
+      );
+    },
+    [runAction],
+  );
+
+  const canCommit = Boolean(draft.trim()) && stagedFiles.length > 0 && !busy;
+  const commit = useCallback(() => {
+    if (!canCommit) return;
+    const message = draft;
+    void runAction('commit', (root) => window.api.git.commit({ rootPath: root, message }), {
+      showSuccess: true,
+      onSuccess: () => setDraft(''),
+    });
+  }, [canCommit, draft, runAction, setDraft]);
 
   const loading = Boolean(rootPath) && !hasFetched;
 
@@ -152,20 +271,57 @@ export function GitPanel() {
           className="git-panel-pull"
           type="button"
           onClick={() => void pull()}
-          disabled={!rootPath || !isGitRepo || pulling}
+          disabled={!rootPath || !isGitRepo || Boolean(busy)}
           title="Pull from upstream (fast-forward only)"
         >
-          {pulling ? 'Pulling…' : 'Pull'}
+          {busy === 'pull' ? 'Pulling…' : 'Pull'}
+        </button>
+        <button
+          className="git-panel-push"
+          type="button"
+          onClick={() => void push()}
+          disabled={!rootPath || !isGitRepo || Boolean(busy)}
+          title="Push the current branch to its upstream"
+        >
+          {busy === 'push' ? 'Pushing…' : 'Push'}
         </button>
         <button className="git-panel-close" type="button" onClick={closeGitPanel} title="Close Source Control">
           ×
         </button>
       </header>
       <div className="git-panel-body">
-        {pullMessage ? (
-          <div className={`git-panel-pull-message${pullMessage.ok ? '' : ' git-panel-error'}`} role="status">
-            <pre>{pullMessage.text}</pre>
-            <button type="button" onClick={() => setPullMessage(null)} title="Dismiss">×</button>
+        {rootPath && hasFetched && !error && isGitRepo ? (
+          <div className="git-panel-commit">
+            <textarea
+              className="git-panel-commit-message"
+              value={draft}
+              placeholder="Commit message (Ctrl+Enter to commit)"
+              aria-label="Commit message"
+              rows={2}
+              spellCheck={false}
+              onChange={(event) => setDraft(event.target.value)}
+              onKeyDown={(event) => {
+                if (event.key === 'Enter' && (event.ctrlKey || event.metaKey)) {
+                  event.preventDefault();
+                  commit();
+                }
+              }}
+            />
+            <button
+              className="git-panel-commit-button"
+              type="button"
+              onClick={commit}
+              disabled={!canCommit}
+              title={stagedFiles.length === 0 ? 'Stage changes to commit them' : 'Commit staged changes (Ctrl+Enter)'}
+            >
+              {busy === 'commit' ? 'Committing…' : 'Commit'}
+            </button>
+          </div>
+        ) : null}
+        {actionMessage ? (
+          <div className={`git-panel-pull-message${actionMessage.ok ? '' : ' git-panel-error'}`} role="status">
+            <pre>{actionMessage.text}</pre>
+            <button type="button" onClick={() => setActionMessage(null)} title="Dismiss">×</button>
           </div>
         ) : null}
         {!rootPath ? <div className="git-panel-empty">Open a folder to show source control.</div> : null}
@@ -177,7 +333,24 @@ export function GitPanel() {
         {rootPath && hasFetched && !error && isGitRepo && files.length === 0 ? (
           <div className="git-panel-empty">No changes.</div>
         ) : null}
-        {rootPath && hasFetched && !error && files.length > 0 ? <GitFileList files={files} /> : null}
+        {rootPath && hasFetched && !error && stagedFiles.length > 0 ? (
+          <GitSection
+            title="Staged Changes"
+            section="staged"
+            files={stagedFiles}
+            disabled={Boolean(busy)}
+            onAction={stageOrUnstage}
+          />
+        ) : null}
+        {rootPath && hasFetched && !error && unstagedFiles.length > 0 ? (
+          <GitSection
+            title="Changes"
+            section="unstaged"
+            files={unstagedFiles}
+            disabled={Boolean(busy)}
+            onAction={stageOrUnstage}
+          />
+        ) : null}
       </div>
     </section>
   );

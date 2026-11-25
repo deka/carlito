@@ -11,13 +11,18 @@ import type {
   FileRenameRequest,
   FileTreeNode,
   GitBaselineResult,
+  GitActionResult,
+  GitCommitRequest,
+  GitPathsRequest,
   GitPullResult,
   GitStatusResult,
   GitBranchResult,
   OpenFileResult,
+  OpenRecentWorkspaceEvent,
   ReadFileDataUrlResult,
   ReadPdfResult,
   ReadFileResult,
+  RecentWorkspace,
   SaveAsDialogRequest,
   SaveAsDialogResult,
   SaveFileRequest,
@@ -113,6 +118,14 @@ export const api = Object.freeze({
       ipcRenderer.invoke(IPC.gitBranch, { rootPath }) as Promise<GitBranchResult>,
     pull: (rootPath: string) =>
       ipcRenderer.invoke(IPC.gitPull, { rootPath }) as Promise<GitPullResult>,
+    push: (rootPath: string) =>
+      ipcRenderer.invoke(IPC.gitPush, { rootPath }) as Promise<GitActionResult>,
+    stage: (request: GitPathsRequest) =>
+      ipcRenderer.invoke(IPC.gitStage, request) as Promise<GitActionResult>,
+    unstage: (request: GitPathsRequest) =>
+      ipcRenderer.invoke(IPC.gitUnstage, request) as Promise<GitActionResult>,
+    commit: (request: GitCommitRequest) =>
+      ipcRenderer.invoke(IPC.gitCommit, request) as Promise<GitActionResult>,
   },
   window: {
     zoomIn: () => ipcRenderer.invoke(IPC.windowZoomIn) as Promise<{ zoomLevel: number }>,
@@ -139,6 +152,18 @@ export const api = Object.freeze({
       ipcRenderer.invoke(IPC.workspaceSearch, request) as Promise<WorkspaceSearchResult>,
     onChanged: (cb: (event: WorkspaceChangedEvent) => void) =>
       on<WorkspaceChangedEvent>(IPC.workspaceChanged, cb),
+    recent: {
+      list: () => ipcRenderer.invoke(IPC.workspaceRecentList) as Promise<RecentWorkspace[]>,
+      /** Open a folder from the recent list in this window; null if it is gone or unknown. */
+      open: (path: string) =>
+        ipcRenderer.invoke(IPC.workspaceRecentOpen, { path }) as Promise<WorkspaceFolderResult | null>,
+      remove: (path: string) =>
+        ipcRenderer.invoke(IPC.workspaceRecentRemove, { path }) as Promise<{ ok: true }>,
+      clear: () => ipcRenderer.invoke(IPC.workspaceRecentClear) as Promise<{ ok: true }>,
+      onChanged: (cb: () => void) => on<void>(IPC.workspaceRecentChanged, cb),
+      onOpenRequested: (cb: (event: OpenRecentWorkspaceEvent) => void) =>
+        on<OpenRecentWorkspaceEvent>(IPC.workspaceRecentOpenRequested, cb),
+    },
   },
   lsp: {
     start: (opts: LspStartOptions) =>

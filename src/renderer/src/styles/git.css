@@ -185,6 +185,105 @@
   font-size: 12px;
 }
 
+.git-panel-action:disabled {
+  cursor: default;
+  opacity: 0.5;
+}
+
+.git-panel-row-action {
+  visibility: hidden;
+  font-size: 14px;
+}
+
+.git-panel-row:hover .git-panel-row-action,
+.git-panel-row:focus-within .git-panel-row-action {
+  visibility: visible;
+}
+
+.git-panel-section + .git-panel-section {
+  margin-top: 8px;
+}
+
+.git-panel-section-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 24px;
+  padding: 0 0 0 8px;
+  border-radius: var(--radius-sm);
+  color: var(--muted-strong);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.git-panel-section-title {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.git-panel-section-count {
+  color: var(--muted);
+  font-weight: 400;
+}
+
+.git-panel-section-header .git-panel-section-action {
+  align-self: stretch;
+  border-left: 0;
+  border-radius: var(--radius-sm);
+  font-size: 14px;
+}
+
+.git-panel-commit {
+  display: flex;
+  align-items: stretch;
+  gap: 6px;
+  margin: 0 4px 8px;
+}
+
+.git-panel-commit-message {
+  flex: 1 1 auto;
+  min-width: 0;
+  min-height: 32px;
+  padding: 5px 8px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  color: var(--fg);
+  font: inherit;
+  resize: vertical;
+}
+
+.git-panel-commit-message:focus {
+  border-color: var(--accent);
+  outline: none;
+}
+
+.git-panel-commit-button {
+  flex: 0 0 auto;
+  padding: 4px 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  color: var(--fg);
+  cursor: pointer;
+  font-size: 12px;
+}
+
+.git-panel-commit-button:hover:not(:disabled) {
+  border-color: var(--accent);
+  background: var(--hover);
+}
+
+.git-panel-commit-button:disabled {
+  cursor: default;
+  opacity: 0.5;
+}
+
 .git-panel-status.git-added,
 .git-panel-count.git-added {
   color: var(--git-added);

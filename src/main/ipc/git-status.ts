@@ -7,7 +7,28 @@ import { isPathInsideOrEqual } from './file-operations';
 export interface GitStatusContext {
   rootPath: string;
   statuses: Map<string, GitFileStatus>;
+  /** Index vs work-tree split of each entry in `statuses`, for the Source Control panel. */
+  sides: Map<string, GitStatusSides>;
   branch?: GitBranchInfo;
+}
+
+type GitStatusSides = Pick<GitChangedFile, 'staged' | 'unstaged' | 'originalPath'>;
+
+const sideStatuses: Record<string, GitFileStatus> = {
+  M: 'modified',
+  T: 'modified',
+  A: 'added',
+  C: 'added',
+  D: 'deleted',
+  R: 'renamed',
+  '?': 'untracked',
+};
+
+/** Splits a porcelain `XY` code into what is staged and what is not; conflicts are never staged. */
+function sidesFromPorcelain(status: GitFileStatus, indexStatus: string, workTreeStatus: string): GitStatusSides {
+  if (status === 'conflict') return { unstaged: 'conflict' };
+  if (status === 'untracked') return { unstaged: 'untracked' };
+  return { staged: sideStatuses[indexStatus], unstaged: sideStatuses[workTreeStatus] };
 }
 
 function statusFromPorcelain(indexStatus: string, workTreeStatus: string): GitFileStatus | undefined {
@@ -95,6 +116,7 @@ export async function getGitBranch(path: string): Promise<GitBranchResult> {
 
 function parseGitStatus(output: string, gitRootPath: string): Omit<GitStatusContext, 'rootPath'> {
   const statuses = new Map<string, GitFileStatus>();
+  const sides = new Map<string, GitStatusSides>();
   let branch: GitBranchInfo | undefined;
   const entries = output.split('\0').filter(Boolean);
 
@@ -109,13 +131,21 @@ function parseGitStatus(output: string, gitRootPath: string): Omit<GitStatusCont
     const status = statusFromPorcelain(entry[0]!, entry[1]!);
     if (!status) continue;
 
-    const relativePath = entry.slice(3);
-    statuses.set(join(gitRootPath, relativePath), status);
+    const path = join(gitRootPath, entry.slice(3));
+    statuses.set(path, status);
+    const entrySides = sidesFromPorcelain(status, entry[0]!, entry[1]!);
 
-    if (entry[0] === 'R' || entry[0] === 'C') index += 1;
+    // With -z, a rename or copy is followed by its source path as its own entry.
+    // Only a rename's source is part of the change (unstaging restores it).
+    if (entry[0] === 'R' || entry[0] === 'C') {
+      index += 1;
+      const originalPath = entries[index];
+      if (entry[0] === 'R' && originalPath) entrySides.originalPath = join(gitRootPath, originalPath);
+    }
+    if (status !== 'ignored') sides.set(path, entrySides);
   }
 
-  return { statuses, branch };
+  return { statuses, sides, branch };
 }
 
 function normalizeGitStatusPath(path: string): string {
@@ -170,6 +200,12 @@ const gitStatusOrder: Record<GitFileStatus, number> = {
   ignored: 6,
 };
 
+/** A rename source outside the workspace cannot be authorized for this window, so it is not exposed. */
+function sidesInside(sides: GitStatusSides | undefined, rootPath: string): GitStatusSides | undefined {
+  if (!sides?.originalPath || isPathInsideOrEqual(sides.originalPath, rootPath)) return sides;
+  return { staged: sides.staged, unstaged: sides.unstaged };
+}
+
 export async function getGitStatus(path: string): Promise<GitStatusResult> {
   const context = await getGitStatusContext(path);
   if (!context) return { isGitRepo: false, files: [] };
@@ -183,6 +219,7 @@ export async function getGitStatus(path: string): Promise<GitStatusResult> {
       uri: pathToFileURL(changedPath).toString(),
       relativePath: relative(path, changedPath),
       status,
+      ...sidesInside(context.sides.get(changedPath), path),
     }))
     .sort(
       (a, b) =>

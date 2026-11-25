@@ -1,8 +1,11 @@
 import { BrowserWindow, type IpcMainInvokeEvent } from 'electron';
 import { realpathSync, watch, type FSWatcher } from 'node:fs';
 import { realpath } from 'node:fs/promises';
+import { pathToFileURL } from 'node:url';
 import { basename, dirname, isAbsolute, join, normalize, relative, resolve, sep } from 'node:path';
+import type { WorkspaceFolderResult } from '@shared/file-types';
 import { IPC } from '@shared/ipc';
+import { rememberWorkspace } from '../config/app-state';
 import { initialWorkspacePath } from '../workspace';
 import { ignoredWatchNames, isIgnoredPath } from './ignored-paths';
 
@@ -65,6 +68,19 @@ export function setWindowWorkspaceRoot(win: BrowserWindow, rootPath: string): vo
   // Opening another folder revokes access granted by the previous workspace root.
   state.allowedRoots.clear();
   state.allowedRoots.add(normalizedRoot);
+}
+
+/** Switch `win` to a new workspace root the user chose (dialog or recent list). */
+export function openWindowWorkspace(win: BrowserWindow, rootPath: string): WorkspaceFolderResult {
+  setWindowWorkspaceRoot(win, rootPath);
+  const normalizedRoot = workspaceRootFor(win);
+  ensureWorkspaceWatcher(win, normalizedRoot);
+  rememberWorkspace(normalizedRoot);
+  return {
+    rootPath: normalizedRoot,
+    rootUri: pathToFileURL(normalizedRoot).toString(),
+    name: basename(normalizedRoot),
+  };
 }
 
 export async function registerAllowedFile(win: BrowserWindow, path: string): Promise<void> {
