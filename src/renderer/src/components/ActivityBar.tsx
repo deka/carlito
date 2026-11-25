@@ -4,6 +4,14 @@ import { useWorkbenchUiStore } from '../store/useWorkbenchUiStore';
 import { WorkspaceMenuButton } from './WorkspaceMenu';
 
 const icons = {
+  quickOpen: (
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <path d="M12.5 19.25H6.75a2 2 0 0 1-2-2V6.75a2 2 0 0 1 2-2h6l4.5 4.5v1.5" />
+      <path d="M12.75 4.75v4.5h4.5" />
+      <circle cx="15.5" cy="15.5" r="2.75" />
+      <path d="m17.5 17.5 2 2" />
+    </svg>
+  ),
   explorer: (
     <svg viewBox="0 0 24 24" aria-hidden="true">
       <path d="M4.75 4.75h5.5l1.5 2h7.5v12.5H4.75z" />
@@ -40,6 +48,15 @@ export function ActivityBar() {
   return (
     <nav className="activity-bar" aria-label="Activity Bar">
       <div className="activity-bar-primary">
+        <button
+          className="activity-bar-button"
+          type="button"
+          onClick={() => void runCommand('workbench.action.quickOpen')}
+          title="Go to File (Ctrl+P)"
+          aria-label="Go to File"
+        >
+          {icons.quickOpen}
+        </button>
         <button
           className={`activity-bar-button ${sidebarVisible ? 'active' : ''}`}
           type="button"
