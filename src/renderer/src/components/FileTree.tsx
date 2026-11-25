@@ -1,8 +1,10 @@
 import type { FormEvent } from 'react';
+import { useMenuPosition } from '../hooks/useMenuPosition';
 import { useEditorStore } from '../store/useEditorStore';
 import { InlineCreateRow } from './fileTree/InlineCreateRow';
 import { TreeNode } from './fileTree/TreeNode';
 import { CreateContext, TreeDragContext } from './fileTree/types';
+import type { TreeContextMenu } from './fileTree/types';
 import { useActiveTabPath } from './fileTree/useActiveTabPath';
 import { useFileTreeOperations } from './fileTree/useFileTreeOperations';
 import { useInitialWorkspace } from './fileTree/useInitialWorkspace';
@@ -110,41 +112,52 @@ export function FileTree() {
           </TreeDragContext.Provider>
         )}
       </div>
-      {contextMenu ? (
-        <div
-          className="tree-context-menu"
-          style={{ left: contextMenu.x, top: contextMenu.y }}
-          onClick={(event) => event.stopPropagation()}
-          onContextMenu={(event) => event.preventDefault()}
-        >
-          <button disabled={!contextMenu.node} onClick={() => operations.copyNode(contextMenu)}>
-            Copy
-          </button>
-          <button disabled={!operations.clipboard} onClick={() => operations.pasteNode(contextMenu)}>
-            Paste{operations.clipboard ? ` "${operations.clipboard.name}"` : ''}
-          </button>
-          <div className="tree-context-separator" />
-          <button disabled={!contextMenu.node} onClick={() => operations.copyAbsolutePath(contextMenu)}>
-            Copy Path
-          </button>
-          <button disabled={!contextMenu.node} onClick={() => operations.copyRelativePath(contextMenu)}>
-            Copy Relative Path
-          </button>
-          <button disabled={!contextMenu.node} onClick={() => operations.revealInFolder(contextMenu)}>
-            Reveal in Finder
-          </button>
-          <div className="tree-context-separator" />
-          <button onClick={() => operations.startCreate(contextMenu, 'file')}>New File…</button>
-          <button onClick={() => operations.startCreate(contextMenu, 'directory')}>New Folder…</button>
-          <button disabled={!contextMenu.node} onClick={() => operations.renameNode(contextMenu)}>
-            Rename…
-          </button>
-          <div className="tree-context-separator" />
-          <button className="danger" disabled={!contextMenu.node} onClick={() => operations.deleteNode(contextMenu)}>
-            Delete
-          </button>
-        </div>
-      ) : null}
+      {contextMenu ? <FileTreeContextMenu contextMenu={contextMenu} operations={operations} /> : null}
     </aside>
+  );
+}
+
+interface FileTreeContextMenuProps {
+  contextMenu: TreeContextMenu;
+  operations: ReturnType<typeof useFileTreeOperations>;
+}
+
+function FileTreeContextMenu({ contextMenu, operations }: FileTreeContextMenuProps) {
+  const menu = useMenuPosition<HTMLDivElement>(contextMenu.x, contextMenu.y);
+  return (
+    <div
+      className="tree-context-menu"
+      ref={menu.ref}
+      style={menu.style}
+      onClick={(event) => event.stopPropagation()}
+      onContextMenu={(event) => event.preventDefault()}
+    >
+      <button disabled={!contextMenu.node} onClick={() => operations.copyNode(contextMenu)}>
+        Copy
+      </button>
+      <button disabled={!operations.clipboard} onClick={() => operations.pasteNode(contextMenu)}>
+        Paste{operations.clipboard ? ` "${operations.clipboard.name}"` : ''}
+      </button>
+      <div className="tree-context-separator" />
+      <button disabled={!contextMenu.node} onClick={() => operations.copyAbsolutePath(contextMenu)}>
+        Copy Path
+      </button>
+      <button disabled={!contextMenu.node} onClick={() => operations.copyRelativePath(contextMenu)}>
+        Copy Relative Path
+      </button>
+      <button disabled={!contextMenu.node} onClick={() => operations.revealInFolder(contextMenu)}>
+        Reveal in Finder
+      </button>
+      <div className="tree-context-separator" />
+      <button onClick={() => operations.startCreate(contextMenu, 'file')}>New File…</button>
+      <button onClick={() => operations.startCreate(contextMenu, 'directory')}>New Folder…</button>
+      <button disabled={!contextMenu.node} onClick={() => operations.renameNode(contextMenu)}>
+        Rename…
+      </button>
+      <div className="tree-context-separator" />
+      <button className="danger" disabled={!contextMenu.node} onClick={() => operations.deleteNode(contextMenu)}>
+        Delete
+      </button>
+    </div>
   );
 }
