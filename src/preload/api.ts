@@ -11,6 +11,9 @@ import type {
   FileRenameRequest,
   FileTreeNode,
   GitBaselineResult,
+  GitActionResult,
+  GitCommitRequest,
+  GitPathsRequest,
   GitPullResult,
   GitStatusResult,
   GitBranchResult,
@@ -115,6 +118,14 @@ export const api = Object.freeze({
       ipcRenderer.invoke(IPC.gitBranch, { rootPath }) as Promise<GitBranchResult>,
     pull: (rootPath: string) =>
       ipcRenderer.invoke(IPC.gitPull, { rootPath }) as Promise<GitPullResult>,
+    push: (rootPath: string) =>
+      ipcRenderer.invoke(IPC.gitPush, { rootPath }) as Promise<GitActionResult>,
+    stage: (request: GitPathsRequest) =>
+      ipcRenderer.invoke(IPC.gitStage, request) as Promise<GitActionResult>,
+    unstage: (request: GitPathsRequest) =>
+      ipcRenderer.invoke(IPC.gitUnstage, request) as Promise<GitActionResult>,
+    commit: (request: GitCommitRequest) =>
+      ipcRenderer.invoke(IPC.gitCommit, request) as Promise<GitActionResult>,
   },
   window: {
     zoomIn: () => ipcRenderer.invoke(IPC.windowZoomIn) as Promise<{ zoomLevel: number }>,

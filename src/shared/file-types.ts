@@ -127,7 +127,14 @@ export interface GitChangedFile {
   path: string;
   uri: string;
   relativePath: string;
+  /** Combined status, as shown in the file tree. */
   status: GitFileStatus;
+  /** Status of the change recorded in the index; undefined when nothing is staged. */
+  staged?: GitFileStatus;
+  /** Status of the work-tree change not yet staged; undefined when the work tree matches the index. */
+  unstaged?: GitFileStatus;
+  /** Previous path of a staged rename or copy. */
+  originalPath?: string;
 }
 
 export interface GitBranchInfo {
@@ -150,10 +157,23 @@ export interface GitStatusResult {
   files: GitChangedFile[];
 }
 
-export interface GitPullResult {
+export interface GitActionResult {
   ok: boolean;
   /** Combined, trimmed git output (stdout on success, stderr/stdout on failure). */
   output: string;
+}
+
+export type GitPullResult = GitActionResult;
+
+/** Stage or unstage absolute paths inside the repository containing `rootPath`. */
+export interface GitPathsRequest {
+  rootPath: string;
+  paths: string[];
+}
+
+export interface GitCommitRequest {
+  rootPath: string;
+  message: string;
 }
 
 export interface WorkspaceSearchRequest {
