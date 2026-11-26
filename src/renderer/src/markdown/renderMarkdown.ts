@@ -39,11 +39,43 @@ function safeImageUrl(value: string, options: RenderMarkdownOptions): string | u
   return resolved && isSafeResolvedMarkdownImageUrl(resolved) ? resolved : undefined;
 }
 
+const htmlEntities: Record<string, string> = { amp: '&', lt: '<', gt: '>', quot: '"', '#39': "'" };
+
+/** Prefix of heading ids, so they cannot clash with the app's own element ids. */
+export const markdownHeadingIdPrefix = 'md-';
+
+/** GitHub-style heading slug: `## Hello, World!` -> `hello-world`. */
+export function markdownSlug(text: string): string {
+  return text
+    .trim()
+    .toLowerCase()
+    .replace(/[^\p{L}\p{M}\p{N}\s_-]/gu, '')
+    .replace(/\s/g, '-');
+}
+
 function createMarked(options: RenderMarkdownOptions): Marked {
+  // Duplicate headings get `-1`, `-2`… like GitHub.
+  const slugCounts = new Map<string, number>();
+  const uniqueSlug = (text: string): string => {
+    const base = markdownSlug(text);
+    const count = slugCounts.get(base) ?? 0;
+    slugCounts.set(base, count + 1);
+    return count === 0 ? base : `${base}-${count}`;
+  };
   return new Marked({
     gfm: true,
     breaks: false,
     renderer: {
+      heading({ tokens, depth }: Tokens.Heading): string {
+        const html = this.parser.parseInline(tokens);
+        // Plain text, minus inline HTML tags, with marked's escaping undone.
+        const text = this.parser
+          .parseInline(tokens, this.parser.textRenderer)
+          .replace(/<[^>]*>/g, '')
+          .replace(/&(amp|lt|gt|quot|#39);/g, (_, name: string) => htmlEntities[name] ?? '');
+        const id = `${markdownHeadingIdPrefix}${uniqueSlug(text)}`;
+        return `<h${depth} id="${escapeHtml(id)}">${html}</h${depth}>\n`;
+      },
       link({ href, title, tokens }: Tokens.Link): string {
         const text = this.parser.parseInline(tokens);
         const url = safeUrl(href, options);
