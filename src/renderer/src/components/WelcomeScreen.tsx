@@ -72,7 +72,7 @@ export function WelcomeScreen() {
           <h1>C’est tout pareil,<br /><em>mais c’est pas pareil.</em></h1>
           <p className="welcome-subtitle">Petit mais costaud&nbsp;! Le même éditeur calme et précis, en format de poche.</p>
           <p className="welcome-credit">
-            Carlito est un fork de Carlo — merci à{' '}
+            Merci à{' '}
             <a
               href={carloAuthorUrl}
               onClick={(event) => {
@@ -82,7 +82,7 @@ export function WelcomeScreen() {
             >
               @rumpl
             </a>
-            , l’auteur de Carlo.
+            {' '}d’avoir créé Carlo, qui a rendu Carlito possible.
           </p>
         </div>
         <div className="welcome-side">
