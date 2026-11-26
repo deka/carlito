@@ -2,9 +2,9 @@
 
 > Le petit frère de Carlo. C’est tout pareil, mais c’est pas pareil. Petit mais costaud.
 
-![Carlo vs Carlito](./assets/carlo-vs-carlito.svg)
+![Carlito](./assets/carlito.svg)
 
-Carlito is a fork of [Carlo](https://github.com/rumpl/carlo), a small Electron IDE for people who want the useful part of VS Code without the rest of VS Code.
+Carlito is a small Electron IDE for people who want the useful part of VS Code without the rest of VS Code.
 
 It is intentionally boring: a file tree, tabs, Monaco, and Language Server Protocol support. No marketplace, no extension platform, no built-in chat, no project system, no telemetry, no side quests. Open a folder, edit files, let your language server do the smart bits.
 
@@ -23,8 +23,6 @@ If a feature does not help you open code, edit code, navigate code, or get LSP f
 
 ## Features
 
-### Everything Carlo has
-
 - Workspace file tree
 - Monaco editor
 - Tabs and editor splits, with draggable tabs
@@ -38,17 +36,14 @@ If a feature does not help you open code, edit code, navigate code, or get LSP f
 - LSP integration over stdio, with organize imports on save
 - Configurable language-to-server mapping
 - Optional `carlito` shell command for opening folders from a terminal
-
-### What Carlito adds
-
-- **Search in the sidebar**: find and replace across the workspace, with case / whole word / regex options, include / exclude patterns, and results grouped in a folder tree
-- **Source Control**: see changes as a folder tree, stage, unstage, commit and pull, with the current branch in the status bar
-- **Integrated terminal** tabs (`Ctrl+Shift+T`) in a resizable bottom panel, with a right-click menu (copy, paste, select all, clear)
-- **Markdown**: switch in place between source, formatted preview and a rich editor
-- **Previews** for HTML, SVG, PDF and images instead of raw content
-- **Recent folders** on the welcome screen and in the workspace menu
-- **In-app updates**: Carlito installed from the `.deb` checks for new releases and updates itself
-- **More room for the code**: no menu bar and no title bar; commands live in the activity bar, the workspace menu and the command palette
+- Search in the sidebar: find and replace across the workspace, with case / whole word / regex options, include / exclude patterns, and results grouped in a folder tree
+- Source Control: see changes as a folder tree, stage, unstage, commit and pull, with the current branch in the status bar
+- Integrated terminal tabs (`Ctrl+Shift+T`) in a resizable bottom panel, with a right-click menu (copy, paste, select all, clear)
+- Markdown: switch in place between source, formatted preview and a rich editor
+- Previews for HTML, SVG, PDF and images instead of raw content
+- Recent folders on the welcome screen and in the workspace menu
+- In-app updates: Carlito installed from the `.deb` checks for new releases and updates itself
+- More room for the code: no menu bar and no title bar; commands live in the activity bar, the workspace menu and the command palette
 
 ## Install
 
@@ -165,4 +160,4 @@ Carlito is not trying to become your operating system. It is an IDE with LSP. Th
 
 ## Thanks
 
-Carlito is a fork of [Carlo](https://github.com/rumpl/carlo) by [@rumpl](https://github.com/rumpl). Huge thanks to rumpl for writing the original editor this little brother grew from: go check out [the original Carlo](https://github.com/rumpl/carlo).
+Thanks to [@rumpl](https://github.com/rumpl) for creating [Carlo](https://github.com/rumpl/carlo), which made Carlito possible.
