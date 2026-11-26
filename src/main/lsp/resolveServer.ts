@@ -1,6 +1,6 @@
 import { app } from 'electron';
 import { accessSync, constants } from 'node:fs';
-import { delimiter, join } from 'node:path';
+import { delimiter, isAbsolute, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { languageServerFor, type ServerLanguageId } from '@shared/language-registry';
 
@@ -25,9 +25,11 @@ function binName(command: string): string {
   return process.platform === 'win32' ? `${command}.cmd` : command;
 }
 
+// Servers are only ever resolved from the app itself and absolute PATH entries.
+// Never from process.cwd() or the workspace: `cd repo && carlo` makes the launch
+// directory an untrusted checkout that could ship its own node_modules/.bin.
 function getScriptRoots(): string[] {
   return [
-    process.cwd(),
     app.getAppPath(),
     join(process.resourcesPath ?? '', 'app.asar.unpacked'),
   ];
@@ -54,7 +56,10 @@ function augmentedEnv(): NodeJS.ProcessEnv {
     '/opt/homebrew/bin',
     '/usr/local/bin',
   ].filter(Boolean) as string[];
-  return { ...process.env, PATH: [...extraPaths, process.env.PATH ?? ''].join(delimiter) };
+  // Empty or relative PATH entries would resolve against the cwd (the workspace
+  // or launch directory), both when looking the server up and when spawning it.
+  const userPaths = (process.env.PATH ?? '').split(delimiter).filter((path) => isAbsolute(path));
+  return { ...process.env, PATH: [...extraPaths, ...userPaths].join(delimiter) };
 }
 
 export function resolveServer(languageId: ServerLanguageId, rootUri: string): ResolvedServer {
@@ -64,7 +69,6 @@ export function resolveServer(languageId: ServerLanguageId, rootUri: string): Re
   const env = augmentedEnv();
   const pathCandidates = (env.PATH ?? '').split(delimiter).map((path) => join(path, binName(commandName)));
   const binCandidates = [
-    join(process.cwd(), 'node_modules', '.bin', binName(commandName)),
     join(app.getAppPath(), 'node_modules', '.bin', binName(commandName)),
     join(
       process.resourcesPath ?? '',
