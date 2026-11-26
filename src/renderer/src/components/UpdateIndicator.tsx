@@ -19,7 +19,7 @@ export function UpdateIndicator() {
         type="button"
         disabled={checking}
         onClick={() => void window.api.update.check(true).catch(console.error)}
-        title={checking ? 'Checking for updates…' : `Carlo ${currentVersion}. Click to check for updates.`}
+        title={checking ? 'Checking for updates…' : `Carlito ${currentVersion}. Click to check for updates.`}
       >
         {checking ? 'Checking…' : `v${currentVersion}`}
       </button>
@@ -28,7 +28,7 @@ export function UpdateIndicator() {
 
   if (phase === 'downloading' || phase === 'installing') {
     return (
-      <span className="status-item status-update status-update-busy" title={`Updating to Carlo ${latestVersion}`}>
+      <span className="status-item status-update status-update-busy" title={`Updating to Carlito ${latestVersion}`}>
         <UpdateIcon />
         {phase === 'downloading' ? 'Downloading update…' : 'Installing update…'}
       </span>
@@ -44,8 +44,8 @@ export function UpdateIndicator() {
       onClick={() => void (installed ? window.api.update.restart() : window.api.update.install())}
       title={
         installed
-          ? `Carlo ${latestVersion} is installed. Click to restart.`
-          : `Carlo ${latestVersion} is available. Click to update.`
+          ? `Carlito ${latestVersion} is installed. Click to restart.`
+          : `Carlito ${latestVersion} is available. Click to update.`
       }
     >
       <UpdateIcon />

@@ -9,7 +9,7 @@ export type InstallCommandLineResult =
   | { ok: true; path: string; warning?: string }
   | { ok: false; error: string; instructions?: string };
 
-const commandName = 'carlo';
+const commandName = 'carlito';
 
 function pathContainsDirectory(directory: string): boolean {
   return (process.env.PATH ?? '').split(':').includes(directory);
@@ -27,7 +27,7 @@ async function installDirectory(): Promise<{ path: string; warning?: string } | 
     try { await access(candidate, constants.W_OK); } catch { continue; }
     const warning = pathContainsDirectory(candidate)
       ? undefined
-      : `${candidate} does not appear to be in PATH. Add it to your shell PATH if 'carlo' is not found.`;
+      : `${candidate} does not appear to be in PATH. Add it to your shell PATH if 'carlito' is not found.`;
     return { path: candidate, warning };
   }
 
@@ -63,8 +63,8 @@ export function registerCliHandlers(): void {
     if (!script) {
       return {
         ok: false,
-        error: 'Could not locate the packaged Carlo app bundle.',
-        instructions: 'Move Carlo to /Applications, open it again, then retry this command.',
+        error: 'Could not locate the packaged Carlito app bundle.',
+        instructions: 'Move Carlito to /Applications, open it again, then retry this command.',
       };
     }
 
@@ -72,7 +72,7 @@ export function registerCliHandlers(): void {
     if (!directory) {
       return {
         ok: false,
-        error: 'Could not find a writable directory for the carlo command.',
+        error: 'Could not find a writable directory for the carlito command.',
         instructions:
           'Make /usr/local/bin writable for your user, or create ~/.local/bin and add it to PATH, then retry.',
       };

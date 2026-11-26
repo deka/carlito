@@ -33,7 +33,7 @@ export function createWindow(options: CreateWindowOptions = {}): BrowserWindow {
     minWidth: 800,
     minHeight: 500,
     backgroundColor: '#2e3440',
-    title: 'carlo',
+    title: 'Carlito',
     webPreferences: {
       preload: join(__dirname, '../preload/index.js'),
       contextIsolation: true,

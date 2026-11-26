@@ -71,7 +71,7 @@ async function showMessage(
 
 async function fetchLatestRelease(): Promise<LatestRelease> {
   const response = await netFetch(LATEST_RELEASE_URL, {
-    headers: { Accept: 'application/vnd.github+json', 'User-Agent': 'carlo-update-check' },
+    headers: { Accept: 'application/vnd.github+json', 'User-Agent': 'carlito-update-check' },
     signal: AbortSignal.timeout(15_000),
   });
   if (!response.ok) throw new Error(`GitHub answered ${response.status} ${response.statusText}`);
@@ -98,7 +98,7 @@ async function fetchLatestRelease(): Promise<LatestRelease> {
   };
 }
 
-/** Carlo can only update itself when this very executable was installed by the `carlo` .deb. */
+/** Carlito can only update itself when this very executable was installed by the `carlito` .deb. */
 async function canInstallDeb(release: LatestRelease): Promise<boolean> {
   if (!app.isPackaged || process.platform !== 'linux' || process.arch !== 'x64') return false;
   if (!release.deb || !release.checksums) return false;
@@ -158,7 +158,7 @@ async function manualCheck(sender: Electron.WebContents): Promise<UpdateState> {
     if (result.phase === 'upToDate') {
       await showMessage(sender, {
         type: 'info',
-        message: 'Carlo is up to date.',
+        message: 'Carlito is up to date.',
         detail: `Version ${result.currentVersion} is the latest release.`,
       });
     } else if (result.phase === 'available') {
@@ -179,7 +179,7 @@ async function installUpdate(sender: Electron.WebContents): Promise<void> {
   if (installInFlight || !release?.deb || !release.checksums || !state.installable) return;
   installInFlight = true;
   const available = state;
-  const dir = await mkdtemp(join(tmpdir(), 'carlo-update-'));
+  const dir = await mkdtemp(join(tmpdir(), 'carlito-update-'));
   let keepDir = false;
   try {
     // apt drops privileges to `_apt` to read local packages; let it traverse the directory.
@@ -212,7 +212,7 @@ async function installUpdate(sender: Electron.WebContents): Promise<void> {
         defaultId: 0,
         cancelId: 1,
         noLink: true,
-        message: `Could not install Carlo ${release.version}.`,
+        message: `Could not install Carlito ${release.version}.`,
         detail: `${errorMessage(error)}\n\nThe downloaded package was verified. You can install it from a terminal:\n${command}`,
       });
       if (response === 0) clipboard.writeText(command);
@@ -220,7 +220,7 @@ async function installUpdate(sender: Electron.WebContents): Promise<void> {
     }
     await showMessage(sender, {
       type: 'error',
-      message: `Could not install Carlo ${release.version}.`,
+      message: `Could not install Carlito ${release.version}.`,
       detail: errorMessage(error),
     });
   } finally {
@@ -239,8 +239,8 @@ async function promptInstall(sender: Electron.WebContents): Promise<void> {
       defaultId: 0,
       cancelId: 1,
       noLink: true,
-      message: `Carlo ${latestVersion} is available.`,
-      detail: `You have ${currentVersion}. This copy of Carlo was not installed from the .deb package, so it cannot update itself. Download the new version from the release page.`,
+      message: `Carlito ${latestVersion} is available.`,
+      detail: `You have ${currentVersion}. This copy of Carlito was not installed from the .deb package, so it cannot update itself. Download the new version from the release page.`,
     });
     if (response === 0 && releaseUrl) await shell.openExternal(releaseUrl);
     return;
@@ -251,8 +251,8 @@ async function promptInstall(sender: Electron.WebContents): Promise<void> {
     defaultId: 0,
     cancelId: 2,
     noLink: true,
-    message: `Carlo ${latestVersion} is available.`,
-    detail: `You have ${currentVersion}. Carlo will download and verify the package, then the system will ask for your password to install it.`,
+    message: `Carlito ${latestVersion} is available.`,
+    detail: `You have ${currentVersion}. Carlito will download and verify the package, then the system will ask for your password to install it.`,
   });
   if (response === 0) await installUpdate(sender);
   else if (response === 1 && releaseUrl) await shell.openExternal(releaseUrl);
@@ -266,9 +266,9 @@ async function promptRestart(sender: Electron.WebContents | undefined): Promise<
     cancelId: 1,
     noLink: true,
     message: state.latestVersion
-      ? `Carlo ${state.latestVersion} is installed.`
-      : 'Carlo is updated.',
-    detail: 'Restart Carlo to use the new version. All windows will be closed.',
+      ? `Carlito ${state.latestVersion} is installed.`
+      : 'Carlito is updated.',
+    detail: 'Restart Carlito to use the new version. All windows will be closed.',
   });
   if (response === 0) restart();
 }

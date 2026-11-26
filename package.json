@@ -1,7 +1,7 @@
 {
-  "name": "carlo",
+  "name": "carlito",
   "version": "0.1.0",
-  "description": "A minimal Electron IDE",
+  "description": "A minimal Electron IDE, little brother of Carlo",
   "license": "MIT",
   "homepage": "https://github.com/deka/carlo",
   "repository": {

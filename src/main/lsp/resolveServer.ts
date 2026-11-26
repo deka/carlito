@@ -26,7 +26,7 @@ function binName(command: string): string {
 }
 
 // Servers are only ever resolved from the app itself and absolute PATH entries.
-// Never from process.cwd() or the workspace: `cd repo && carlo` makes the launch
+// Never from process.cwd() or the workspace: `cd repo && carlito` makes the launch
 // directory an untrusted checkout that could ship its own node_modules/.bin.
 function getScriptRoots(): string[] {
   return [

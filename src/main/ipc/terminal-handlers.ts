@@ -69,7 +69,7 @@ function shellEnv(): Record<string, string> {
   }
   env.TERM = 'xterm-256color';
   env.COLORTERM = 'truecolor';
-  env.TERM_PROGRAM = 'carlo';
+  env.TERM_PROGRAM = 'carlito';
   return env;
 }
 
