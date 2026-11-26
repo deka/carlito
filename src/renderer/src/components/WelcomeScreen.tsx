@@ -69,8 +69,8 @@ export function WelcomeScreen() {
         <div className="welcome-hero">
           <div className="welcome-logo" aria-hidden="true"><span /></div>
           <p className="welcome-kicker">Carlito · Le petit frère de Carlo</p>
-          <h1>C’est tout pareil,<br /><em>mais c’est pas pareil.</em></h1>
-          <p className="welcome-subtitle">Petit mais costaud&nbsp;! Le même éditeur calme et précis, en format de poche.</p>
+          <h1>Il tient dans la poche,<br /><em>pas dans ta RAM.</em></h1>
+          <p className="welcome-subtitle">Un poids plume qui cogne comme un poids lourd&nbsp;: l’éditeur, le LSP, le terminal, et rien qui dépasse.</p>
           <p className="welcome-credit">
             Merci à{' '}
             <a

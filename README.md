@@ -1,6 +1,6 @@
 # Carlito
 
-> Le petit frère de Carlo. C’est tout pareil, mais c’est pas pareil. Petit mais costaud.
+> Le petit frère de Carlo. Même famille, autre caractère : il tient dans la poche, pas dans ta RAM.
 
 ![Carlito](./assets/carlito.svg)
 
