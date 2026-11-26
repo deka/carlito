@@ -1,6 +1,6 @@
 # Carlito
 
-> Small but mighty. Fits in your pocket, not in your RAM.
+> Everything you need, nothing in the way. A focused, simple workspace for writing code.
 
 ![Carlito](./assets/carlito.svg)
 

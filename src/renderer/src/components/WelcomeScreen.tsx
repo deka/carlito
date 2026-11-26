@@ -66,9 +66,9 @@ export function WelcomeScreen() {
       <div className="welcome-card">
         <div className="welcome-hero">
           <div className="welcome-logo" aria-hidden="true"><span /></div>
-          <p className="welcome-kicker">Carlito · Small but mighty</p>
-          <h1>Fits in your pocket.<br /><em>Not in your RAM.</em></h1>
-          <p className="welcome-subtitle">A featherweight editor that punches like a heavyweight: Monaco, LSP, a terminal, and nothing in your way.</p>
+          <p className="welcome-kicker">Carlito · Just the workspace</p>
+          <h1>Everything you need.<br /><em>Nothing in the way.</em></h1>
+          <p className="welcome-subtitle">A calm, focused place to work: open a folder, find your way around, write code. Carlito keeps everything else out of sight.</p>
         </div>
         <div className="welcome-side">
           <div className="welcome-actions">
