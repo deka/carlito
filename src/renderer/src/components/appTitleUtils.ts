@@ -6,7 +6,7 @@ export function titleFromState(): string {
   const tab = tabs.find((candidate) => candidate.id === activeTabId);
   if (tab) {
     const dirty = tab.dirty ? '● ' : '';
-    return workspace ? `${dirty}${tab.title} — ${workspace.name} — Carlo` : `${dirty}${tab.title} — Carlo`;
+    return workspace ? `${dirty}${tab.title} — ${workspace.name} — Carlito` : `${dirty}${tab.title} — Carlito`;
   }
-  return workspace ? `${workspace.name} — Carlo` : 'Carlo';
+  return workspace ? `${workspace.name} — Carlito` : 'Carlito';
 }

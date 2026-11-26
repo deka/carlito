@@ -19,7 +19,7 @@ import { createWindow } from './window';
 registerLocalResourceScheme();
 
 // The single-instance lock is keyed on userData. Give dev builds their own profile so
-// `npm run dev` does not hand off to an installed Carlo that is already running.
+// `npm run dev` does not hand off to an installed Carlito that is already running.
 if (!app.isPackaged) app.setPath('userData', `${app.getPath('userData')}-dev`);
 
 const gotSingleInstanceLock = app.requestSingleInstanceLock();

@@ -1,4 +1,4 @@
-// Electron-free on purpose: download/verify/install of the Carlo .deb, runnable from plain Node.
+// Electron-free on purpose: download/verify/install of the Carlito .deb, runnable from plain Node.
 import { execFile } from 'node:child_process';
 import { createHash } from 'node:crypto';
 import { createWriteStream } from 'node:fs';
@@ -12,7 +12,7 @@ import { parseChecksums } from './versions';
 
 const execFileAsync = promisify(execFile);
 
-export const PACKAGE_NAME = 'carlo';
+export const PACKAGE_NAME = 'carlito';
 export const PKEXEC = '/usr/bin/pkexec';
 export const APT_GET = '/usr/bin/apt-get';
 
@@ -40,7 +40,7 @@ async function fetchAsset(fetchImpl: FetchImpl, url: string): Promise<Response> 
     );
     try {
       return await fetchImpl(url, {
-        headers: { 'User-Agent': 'carlo-update-check' },
+        headers: { 'User-Agent': 'carlito-update-check' },
         signal: controller.signal,
       });
     } catch (error) {
@@ -150,7 +150,7 @@ export function manualInstallCommand(debPath: string): string {
 
 export type InstallOutcome = 'installed' | 'cancelled';
 
-/** Runs apt-get as root through polkit: the password dialog belongs to the system, never to Carlo. */
+/** Runs apt-get as root through polkit: the password dialog belongs to the system, never to Carlito. */
 export function aptInstall(debPath: string): Promise<InstallOutcome> {
   return new Promise((resolve, reject) => {
     const child = execFile(

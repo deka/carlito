@@ -5,7 +5,7 @@ import { openRecentWorkspace } from '../utils/recentWorkspaces';
 
 const shortcuts = [
   { label: 'Open a file', detail: 'Start with something local', keys: 'Ctrl O', command: 'file.open', icon: 'file' },
-  { label: 'Open a workspace', detail: 'Bring a project into Carlo', keys: null, command: 'workspace.openFolder', icon: 'folder' },
+  { label: 'Open a workspace', detail: 'Bring a project into Carlito', keys: null, command: 'workspace.openFolder', icon: 'folder' },
   { label: 'Quick open', detail: 'Jump anywhere, instantly', keys: 'Ctrl P', command: 'workbench.action.quickOpen', icon: 'search' },
 ] as const;
 
@@ -66,9 +66,9 @@ export function WelcomeScreen() {
       <div className="welcome-card">
         <div className="welcome-hero">
           <div className="welcome-logo" aria-hidden="true"><span /></div>
-          <p className="welcome-kicker">Carlo · Focused by design</p>
-          <h1>Code at the<br /><em>speed of thought.</em></h1>
-          <p className="welcome-subtitle">A precise, beautifully quiet space for making exceptional software.</p>
+          <p className="welcome-kicker">Carlito · Just the workspace</p>
+          <h1>Everything you need.<br /><em>Nothing in the way.</em></h1>
+          <p className="welcome-subtitle">A calm, focused place to work: open a folder, find your way around, write code. Carlito keeps everything else out of sight.</p>
         </div>
         <div className="welcome-side">
           <div className="welcome-actions">
@@ -90,7 +90,7 @@ export function WelcomeScreen() {
           <figcaption>{quote.author}</figcaption>
         </figure>
         <p className="welcome-hint">
-          <span aria-hidden="true">✦</span> Press <kbd>Ctrl Shift P</kbd> to make Carlo do almost anything.
+          <span aria-hidden="true">✦</span> Press <kbd>Ctrl Shift P</kbd> to make Carlito do almost anything.
         </p>
       </div>
     </div>

@@ -48,7 +48,7 @@ async function askToRunWorkspaceTypeScript(
     detail:
       `JavaScript and TypeScript language features use the TypeScript server found at:\n\n${tsserverPath}\n\n` +
       'Running it executes code that comes with this folder. Only allow it if you trust the folder. ' +
-      'Carlo remembers the choice to allow it.',
+      'Carlito remembers the choice to allow it.',
   };
   const { response } = win
     ? await dialog.showMessageBox(win, options)

@@ -20,7 +20,7 @@ let pendingWrite: Promise<void> = Promise.resolve();
 const recentListeners = new Set<() => void>();
 
 function appStatePath(): string {
-  return join(configHome(), 'carlo', 'state.json');
+  return join(configHome(), 'carlito', 'state.json');
 }
 
 function isNonEmptyString(value: unknown): value is string {

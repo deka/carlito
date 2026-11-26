@@ -1,5 +1,5 @@
-appId: dev.rumpl.carlo
-productName: carlo
+appId: dev.deka.carlito
+productName: carlito
 electronDist: node_modules/electron/dist
 directories:
   output: dist
@@ -20,8 +20,8 @@ linux:
     - deb
     - tar.gz
   category: Development
-  maintainer: carlo
-  synopsis: A minimal Electron IDE
+  maintainer: carlito
+  synopsis: A minimal Electron IDE, little brother of Carlo
 deb:
-  packageName: carlo
+  packageName: carlito
 npmRebuild: false

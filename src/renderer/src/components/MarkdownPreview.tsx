@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { getModel } from '../editor/models';
-import { markdownImageUrls, renderMarkdown } from '../markdown/renderMarkdown';
+import { markdownHeadingIdPrefix, markdownImageUrls, markdownSlug, renderMarkdown } from '../markdown/renderMarkdown';
 import { isMarkdownPreviewUri, sourceUriFromMarkdownPreviewUri } from '../markdown/previewTabs';
 import {
   localMarkdownAssetPath,
@@ -13,6 +13,33 @@ interface Props {
   groupId: string;
   /** Set when the preview replaces the source editor in place. */
   onShowSource?: () => void;
+}
+
+/**
+ * Jumps to `#fragment` inside the preview, without touching the app's URL:
+ * a heading (`md-` slug ids), then a raw HTML `id`/`name` anchor. `#` alone goes to the top.
+ */
+function scrollToFragment(container: HTMLElement, fragment: string): void {
+  let name = fragment;
+  try {
+    name = decodeURIComponent(fragment);
+  } catch {
+    // Keep the raw fragment.
+  }
+  if (!name) {
+    container.scrollTo({ top: 0 });
+    return;
+  }
+  const target = [
+    `#${CSS.escape(markdownHeadingIdPrefix + name)}`,
+    `#${CSS.escape(markdownHeadingIdPrefix + markdownSlug(name))}`,
+    `#${CSS.escape(name)}`,
+    `a[name="${CSS.escape(name)}"]`,
+  ]
+    .map((selector) => container.querySelector(selector))
+    .find((element) => element !== null);
+  // Scroll only the preview: scrollIntoView would also shift overflow-hidden app ancestors.
+  if (target) container.scrollTop += target.getBoundingClientRect().top - container.getBoundingClientRect().top;
 }
 
 export function MarkdownPreview({ groupId, onShowSource }: Props) {
@@ -135,7 +162,11 @@ export function MarkdownPreview({ groupId, onShowSource }: Props) {
             if (!anchor) return;
             event.preventDefault();
             const href = anchor.getAttribute('href');
-            if (!href || href.startsWith('#')) return;
+            if (!href) return;
+            if (href.startsWith('#')) {
+              scrollToFragment(event.currentTarget, href.slice(1));
+              return;
+            }
             const externalUrl = markdownAnchorUrl(href);
             if (!externalUrl || externalUrl.startsWith('#')) return;
             void window.api.shell.openExternal(externalUrl).catch(console.error);

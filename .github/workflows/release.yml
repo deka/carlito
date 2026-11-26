@@ -1,8 +1,9 @@
 name: Release
 
-# Every push to `main` builds Carlo and publishes a GitHub release.
-# The version is `<major>.<minor>` from package.json plus the workflow run
-# number as patch (e.g. 0.1.42), so each release has a unique, increasing tag.
+# Every push to `main` builds Carlito and publishes a GitHub release.
+# The version is `<major>.<minor>` from package.json plus a patch number one
+# above the highest existing `v<major>.<minor>.N` tag (0 when there is none),
+# so each release has a unique, increasing tag: 0.1.0, 0.1.1, 0.1.2…
 # Run it manually (Actions > Release > Run workflow) on any branch to only
 # build the packages and download them as workflow artifacts.
 on:
@@ -52,7 +53,10 @@ jobs:
         id: version
         run: |
           base=$(node -p "require('./package.json').version.split('.').slice(0, 2).join('.')")
-          version="$base.$GITHUB_RUN_NUMBER"
+          last=$(git ls-remote --tags --refs origin "refs/tags/v$base.*" \
+            | sed -n "s#.*refs/tags/v$base\.\([0-9][0-9]*\)\$#\1#p" \
+            | sort -n | tail -n 1)
+          version="$base.$(( ${last:--1} + 1 ))"
           echo "version=$version" >> "$GITHUB_OUTPUT"
           npm version "$version" --no-git-tag-version --allow-same-version
 
@@ -76,7 +80,7 @@ jobs:
       - name: Upload packages
         uses: actions/upload-artifact@v7
         with:
-          name: carlo-linux-x64
+          name: carlito-linux-x64
           path: |
             dist/*.deb
             dist/*.tar.gz
@@ -100,7 +104,7 @@ jobs:
       - name: Download packages
         uses: actions/download-artifact@v8
         with:
-          name: carlo-linux-x64
+          name: carlito-linux-x64
           path: dist
 
       # One line per commit since the previous release tag (merge commits of
@@ -135,6 +139,6 @@ jobs:
           else
             gh release create "$tag" dist/* \
               --target "$GITHUB_SHA" \
-              --title "Carlo $VERSION" \
+              --title "Carlito $VERSION" \
               --notes-file "$RUNNER_TEMP/notes.md"
           fi

@@ -6,7 +6,7 @@ async function installCommandLine(): Promise<void> {
   const result = await window.api.app.installCommandLine();
   if (result.ok) {
     window.alert(
-      [`Installed the 'carlo' shell command at:`, result.path, result.warning]
+      [`Installed the 'carlito' shell command at:`, result.path, result.warning]
         .filter(Boolean)
         .join('\n\n'),
     );
@@ -14,7 +14,7 @@ async function installCommandLine(): Promise<void> {
   }
 
   window.alert(
-    [`Could not install the 'carlo' shell command.`, result.error, result.instructions]
+    [`Could not install the 'carlito' shell command.`, result.error, result.instructions]
       .filter(Boolean)
       .join('\n\n'),
   );
@@ -35,7 +35,7 @@ export function registerApplicationCommands(): void {
   });
   registerCommand({
     id: 'app.installCommandLine',
-    title: "Shell Command: Install 'carlo' Command in PATH",
+    title: "Shell Command: Install 'carlito' Command in PATH",
     run: installCommandLine,
   });
   registerCommand({
@@ -47,7 +47,7 @@ export function registerApplicationCommands(): void {
   });
   registerCommand({
     id: 'app.quit',
-    title: 'Quit Carlo',
+    title: 'Quit Carlito',
     keybinding: 'Ctrl+Q',
     run: async () => {
       await window.api.app.quit();

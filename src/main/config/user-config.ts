@@ -4,7 +4,7 @@ import { defaultUserConfig, mergeUserConfig, type CarloUserConfig } from '@share
 import { configHome, loadJsonConfig } from './config-home';
 
 export function userConfigPath(): string {
-  return join(configHome(), 'carlo', 'config.json');
+  return join(configHome(), 'carlito', 'config.json');
 }
 
 export function loadUserConfig(): CarloUserConfig {

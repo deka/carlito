@@ -14,7 +14,7 @@ export function StatusBar() {
 
   return (
     <footer className="status-bar">
-      <div className="status-brand" title="Carlo is ready">
+      <div className="status-brand" title="Carlito is ready">
         <span className="status-ready-dot" aria-hidden="true" />
         <span>Ready</span>
       </div>

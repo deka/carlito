@@ -3,7 +3,7 @@ import { defaultConfig, mergeLanguageConfig, setLanguageConfig, type LanguageCon
 import { configHome, loadJsonConfig } from './config-home';
 
 export function languageConfigPath(): string {
-  return join(configHome(), 'carlo', 'languages.json');
+  return join(configHome(), 'carlito', 'languages.json');
 }
 
 export function loadLanguageConfig(): LanguageConfig {
