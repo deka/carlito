@@ -483,16 +483,6 @@
   font-size: 14px;
   line-height: 1.65;
 }
-.welcome-credit {
-  margin: 14px 0 0;
-  color: var(--muted);
-  font-size: 12px;
-}
-.welcome-credit a {
-  color: color-mix(in srgb, var(--accent) 80%, var(--fg));
-  text-decoration: none;
-}
-.welcome-credit a:hover { text-decoration: underline; }
 .welcome-actions {
   display: grid;
   gap: 8px;

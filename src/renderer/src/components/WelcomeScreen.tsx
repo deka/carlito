@@ -56,8 +56,6 @@ const quotes = [
   { text: 'The obstacle is the way.', author: 'Marcus Aurelius' },
 ];
 
-const carloAuthorUrl = 'https://github.com/rumpl';
-
 const quote = quotes[Math.floor(Math.random() * quotes.length)]!;
 
 export function WelcomeScreen() {
@@ -68,22 +66,9 @@ export function WelcomeScreen() {
       <div className="welcome-card">
         <div className="welcome-hero">
           <div className="welcome-logo" aria-hidden="true"><span /></div>
-          <p className="welcome-kicker">Carlito · Le petit frère de Carlo</p>
-          <h1>Il tient dans la poche,<br /><em>pas dans ta RAM.</em></h1>
-          <p className="welcome-subtitle">Un poids plume qui cogne comme un poids lourd&nbsp;: l’éditeur, le LSP, le terminal, et rien qui dépasse.</p>
-          <p className="welcome-credit">
-            Merci à{' '}
-            <a
-              href={carloAuthorUrl}
-              onClick={(event) => {
-                event.preventDefault();
-                void window.api.shell.openExternal(carloAuthorUrl).catch(console.error);
-              }}
-            >
-              @rumpl
-            </a>
-            {' '}d’avoir créé Carlo, qui a rendu Carlito possible.
-          </p>
+          <p className="welcome-kicker">Carlito · Small but mighty</p>
+          <h1>Fits in your pocket.<br /><em>Not in your RAM.</em></h1>
+          <p className="welcome-subtitle">A featherweight editor that punches like a heavyweight: Monaco, LSP, a terminal, and nothing in your way.</p>
         </div>
         <div className="welcome-side">
           <div className="welcome-actions">
