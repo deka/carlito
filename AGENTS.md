@@ -60,7 +60,7 @@ Do not introduce package downloads or dependency changes unless explicitly reque
 
 ## Multi-window behavior
 
-- The packaged app uses a single-instance lock. Subsequent `carlo <dir>` launches should create a new window in the existing app, not start a full second Electron app.
+- The packaged app uses a single-instance lock. Subsequent `carlito <dir>` launches should create a new window in the existing app, not start a full second Electron app.
 - Each window must be able to use a different workspace directory.
 - Watchers and LSP managers must be per-window. Avoid module-level singleton state for workspace-specific data unless it is intentionally shared.
 - Menu commands should target the focused window, not the first-created window.
@@ -122,7 +122,7 @@ Startup performance is a core feature. Be very careful with imports and synchron
 For window/CLI changes:
 
 1. Launch packaged/dev app with no args.
-2. Run `carlo <different-dir>` while it is open.
+2. Run `carlito <different-dir>` while it is open.
 3. Confirm a second window opens quickly and uses the requested workspace.
 4. Confirm the first window keeps its original workspace.
 
