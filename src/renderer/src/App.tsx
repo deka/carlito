@@ -1,6 +1,7 @@
 import { lazy, Suspense, useEffect, useState } from 'react';
 import { ActivityBar } from './components/ActivityBar';
 import { FileTree } from './components/FileTree';
+import { GitDialog } from './components/GitDialog';
 import { BottomPanel } from './components/BottomPanel';
 import { SettingsPanel } from './components/SettingsPanel';
 import { StatusBar } from './components/StatusBar';
@@ -157,6 +158,7 @@ export function App() {
       </div>
       <StatusBar />
       <SettingsPanel />
+      <GitDialog />
     </main>
   );
 }

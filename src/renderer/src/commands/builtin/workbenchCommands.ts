@@ -2,6 +2,7 @@ import { restartLanguageClient } from '../../lsp/LanguageClientService';
 import { navigateProblem } from '../../problems/navigation';
 import { useEditorStore, activeTab } from '../../store/useEditorStore';
 import { useBottomPanelStore } from '../../store/useBottomPanelStore';
+import { useGitDialogStore } from '../../store/useGitDialogStore';
 import { useWorkbenchUiStore } from '../../store/useWorkbenchUiStore';
 import { openTerminal } from '../../terminal/terminalTabs';
 import { registerCommand } from '../registry';
@@ -42,9 +43,9 @@ export function registerWorkbenchCommands(): void {
   });
   registerCommand({
     id: 'workbench.panel.git.toggle',
-    title: 'Git: Show Changes',
+    title: 'Git: Show Source Control',
     keybinding: 'Ctrl+Shift+G',
-    run: () => useBottomPanelStore.getState().togglePanel('git'),
+    run: () => useGitDialogStore.getState().toggleGitDialog(),
   });
   registerCommand({
     id: 'editor.action.marker.next',

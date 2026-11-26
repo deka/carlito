@@ -143,6 +143,8 @@ export interface GitBranchInfo {
 export interface GitBranchResult {
   isGitRepo: boolean;
   branch?: GitBranchInfo;
+  /** Changed files inside the workspace (staged, unstaged or untracked); undefined when unknown. */
+  changedFiles?: number;
 }
 
 export interface GitStatusResult {

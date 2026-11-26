@@ -2,12 +2,12 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useWorkspaceChangeDebounce } from '../hooks/useWorkspaceChangeDebounce';
 import type { GitBranchInfo, GitChangedFile, GitFileStatus } from '@shared/file-types';
 import { useEditorStore } from '../store/useEditorStore';
-import { useBottomPanelStore } from '../store/useBottomPanelStore';
 import { GitFileList, type GitFileSection } from './GitFileList';
 import { statusLabels } from '../git/gitStatusMaps';
 import { branchDisplayName, branchSyncLabel, branchTitle, sameBranch } from '../git/gitBranch';
 import { useGitBranchStore } from '../store/useGitBranchStore';
 import { GitBranchIcon } from './GitBranchIcon';
+import { openGitChanges } from '../git/diffTabs';
 
 function GitBranchLabel({ branch }: { branch: GitBranchInfo }) {
   const sync = branchSyncLabel(branch);
@@ -30,16 +30,16 @@ interface GitPanelState {
 
 const initialState: GitPanelState = { files: [], isGitRepo: false, hasFetched: false, error: null };
 
-// Last known status per workspace root. The panel is unmounted whenever another
-// bottom-panel tab is shown, so this lets it reappear with the previous list
-// instead of flashing "Loading changes…" while git status runs again.
+// Last known status per workspace root. The panel is unmounted whenever the
+// dialog closes, so this lets it reappear with the previous list instead of
+// flashing "Loading changes…" while git status runs again.
 const lastStateByRoot = new Map<string, GitPanelState>();
 
 function cachedState(rootPath: string | undefined): GitPanelState {
   return (rootPath && lastStateByRoot.get(rootPath)) || initialState;
 }
 
-// Draft commit message per workspace root, kept across panel unmounts.
+// Draft commit message per workspace root, kept across dialog closes.
 const draftMessageByRoot = new Map<string, string>();
 
 function sameFiles(a: GitChangedFile[], b: GitChangedFile[]): boolean {
@@ -74,9 +74,10 @@ interface GitSectionProps {
   files: GitChangedFile[];
   disabled: boolean;
   onAction: (files: GitChangedFile[], section: GitFileSection) => void;
+  onOpen: (file: GitChangedFile) => void;
 }
 
-function GitSection({ title, section, files, disabled, onAction }: GitSectionProps) {
+function GitSection({ title, section, files, disabled, onAction, onOpen }: GitSectionProps) {
   const allTitle = section === 'staged' ? 'Unstage all changes' : 'Stage all changes';
   return (
     <div className="git-panel-section">
@@ -99,14 +100,22 @@ function GitSection({ title, section, files, disabled, onAction }: GitSectionPro
         section={section}
         disabled={disabled}
         onAction={(selected) => onAction(selected, section)}
+        onOpen={onOpen}
       />
     </div>
   );
 }
 
-export function GitPanel() {
+export function GitPanel({ onClose }: { onClose: () => void }) {
   const rootPath = useEditorStore((state) => state.workspace?.rootPath);
-  const closeGitPanel = useCallback(() => useBottomPanelStore.getState().closePanel(), []);
+  // The diff opens in an editor tab behind the dialog: close it to show the diff.
+  const openFile = useCallback(
+    (file: GitChangedFile) => {
+      openGitChanges(file.path);
+      onClose();
+    },
+    [onClose],
+  );
 
   const [state, setState] = useState<GitPanelState>(() => cachedState(rootPath));
   const [busy, setBusy] = useState<GitBusyAction | null>(null);
@@ -151,7 +160,7 @@ export function GitPanel() {
       const result = await window.api.git.status(rootPath);
       if (requestId !== requestIdRef.current) return;
       // Same answer as the status bar's lighter query: keep both in step.
-      useGitBranchStore.getState().setBranch(rootPath, result);
+      useGitBranchStore.getState().setBranch(rootPath, { ...result, changedFiles: result.files.length });
       setState((prev) => {
         if (
           prev.hasFetched &&
@@ -285,8 +294,8 @@ export function GitPanel() {
         >
           {busy === 'push' ? 'Pushing…' : 'Push'}
         </button>
-        <button className="git-panel-close" type="button" onClick={closeGitPanel} title="Close Source Control">
-          ×
+        <button className="git-panel-close" type="button" onClick={onClose} title="Close (Escape)" aria-label="Close Source Control">
+          <svg viewBox="0 0 16 16" aria-hidden="true"><path d="m5 5 6 6M11 5l-6 6" /></svg>
         </button>
       </header>
       <div className="git-panel-body">
@@ -340,6 +349,7 @@ export function GitPanel() {
             files={stagedFiles}
             disabled={Boolean(busy)}
             onAction={stageOrUnstage}
+            onOpen={openFile}
           />
         ) : null}
         {rootPath && hasFetched && !error && unstagedFiles.length > 0 ? (
@@ -349,6 +359,7 @@ export function GitPanel() {
             files={unstagedFiles}
             disabled={Boolean(busy)}
             onAction={stageOrUnstage}
+            onOpen={openFile}
           />
         ) : null}
       </div>

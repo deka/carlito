@@ -1,9 +1,9 @@
 import { useCallback, useEffect } from 'react';
 import { branchDisplayName, branchSyncLabel, branchTitle } from '../git/gitBranch';
 import { useWorkspaceChangeDebounce } from '../hooks/useWorkspaceChangeDebounce';
-import { useBottomPanelStore } from '../store/useBottomPanelStore';
 import { useEditorStore } from '../store/useEditorStore';
 import { useGitBranchStore } from '../store/useGitBranchStore';
+import { useGitDialogStore } from '../store/useGitDialogStore';
 import { GitBranchIcon } from './GitBranchIcon';
 
 /** Keeps the branch store in step with the workspace: on open, on file/.git changes and on window focus. */
@@ -33,19 +33,24 @@ export function GitBranchIndicator() {
   const branch = useGitBranchStore((state) =>
     state.rootPath === rootPath && state.isGitRepo ? state.branch : undefined,
   );
+  const changedFiles = useGitBranchStore((state) => (state.rootPath === rootPath ? state.changedFiles : undefined));
   if (!branch) return null;
 
   const sync = branchSyncLabel(branch);
+  const changesTitle = changedFiles
+    ? `, ${changedFiles} changed file${changedFiles === 1 ? '' : 's'}`
+    : '';
   return (
     <button
       className="status-item status-button status-git-branch"
       type="button"
-      onClick={() => useBottomPanelStore.getState().togglePanel('git')}
-      title={`${branchTitle(branch)} — Toggle Source Control`}
+      onClick={() => useGitDialogStore.getState().toggleGitDialog()}
+      title={`${branchTitle(branch)}${changesTitle} — Source Control (Ctrl+Shift+G)`}
     >
       <GitBranchIcon />
       <span className="status-git-branch-name">{branchDisplayName(branch)}</span>
       {sync ? <span className="status-git-branch-sync">{sync}</span> : null}
+      {changedFiles ? <span className="status-git-branch-changes">●{changedFiles}</span> : null}
     </button>
   );
 }

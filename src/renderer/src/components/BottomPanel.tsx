@@ -6,7 +6,6 @@ import { useBottomPanelResize } from '../hooks/useBottomPanelResize';
 
 const ProblemsPanel = lazy(() => import('./ProblemsPanel').then((module) => ({ default: module.ProblemsPanel })));
 const SearchPanel = lazy(() => import('./SearchPanel').then((module) => ({ default: module.SearchPanel })));
-const GitPanel = lazy(() => import('./GitPanel').then((module) => ({ default: module.GitPanel })));
 
 export function BottomPanel() {
   const activePanel = useBottomPanelStore((state) => state.activePanel);
@@ -38,7 +37,6 @@ export function BottomPanel() {
         <Suspense fallback={null}>
           {activePanel === 'problems' ? <ProblemsPanel /> : null}
           {activePanel === 'search' ? <SearchPanel /> : null}
-          {activePanel === 'git' ? <GitPanel /> : null}
         </Suspense>
       </div>
     </section>

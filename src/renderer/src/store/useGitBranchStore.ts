@@ -7,6 +7,8 @@ interface GitBranchState {
   rootPath?: string;
   isGitRepo: boolean;
   branch?: GitBranchInfo;
+  /** Changed files in the workspace, when known. */
+  changedFiles?: number;
   refresh: (rootPath: string) => Promise<void>;
   setBranch: (rootPath: string, result: GitBranchResult) => void;
   clear: () => void;
@@ -15,7 +17,7 @@ interface GitBranchState {
 // Monotonic id so a slow, outdated answer never overwrites a newer one.
 let requestId = 0;
 
-/** Current git branch of the window's workspace, shown in the status bar and the Source Control panel. */
+/** Current git branch of the window's workspace, shown in the status bar and the Source Control dialog. */
 export const useGitBranchStore = create<GitBranchState>((set, get) => ({
   isGitRepo: false,
   refresh: async (rootPath) => {
@@ -28,13 +30,25 @@ export const useGitBranchStore = create<GitBranchState>((set, get) => ({
       if (id === requestId) get().setBranch(rootPath, { isGitRepo: false });
     }
   },
-  setBranch: (rootPath, { isGitRepo, branch }) => {
+  setBranch: (rootPath, { isGitRepo, branch, changedFiles }) => {
     const state = get();
-    if (state.rootPath === rootPath && state.isGitRepo === isGitRepo && sameBranch(state.branch, branch)) return;
-    set({ rootPath, isGitRepo, branch: isGitRepo ? branch : undefined });
+    if (
+      state.rootPath === rootPath &&
+      state.isGitRepo === isGitRepo &&
+      sameBranch(state.branch, branch) &&
+      state.changedFiles === changedFiles
+    ) {
+      return;
+    }
+    set({
+      rootPath,
+      isGitRepo,
+      branch: isGitRepo ? branch : undefined,
+      changedFiles: isGitRepo ? changedFiles : undefined,
+    });
   },
   clear: () => {
     requestId++;
-    set({ rootPath: undefined, isGitRepo: false, branch: undefined });
+    set({ rootPath: undefined, isGitRepo: false, branch: undefined, changedFiles: undefined });
   },
 }));
