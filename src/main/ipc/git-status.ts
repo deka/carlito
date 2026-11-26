@@ -83,9 +83,32 @@ function parseTrack(track: string | undefined): Pick<GitBranchInfo, 'ahead' | 'b
 }
 
 /**
- * Current branch and upstream sync of the repository containing `path`. Unlike
- * `getGitStatus`, this never scans the work tree: it only reads refs, so it is
- * cheap enough for the status bar to call on every workspace change.
+ * Number of changed files inside `path`, counted the way the Source Control
+ * dialog lists them (untracked files one by one, a rename once). Skips
+ * `--ignored`, the expensive part of the file tree's status query.
+ */
+async function countChangedFiles(path: string): Promise<number | undefined> {
+  try {
+    const entries = (await gitExecRaw(['status', '--porcelain=v1', '-z', '--untracked-files=all', '--', '.'], path))
+      .split('\0')
+      .filter(Boolean);
+    let count = 0;
+    for (let index = 0; index < entries.length; index += 1) {
+      const entry = entries[index]!;
+      count += 1;
+      // A rename or copy is followed by its source path as its own entry.
+      if (entry[0] === 'R' || entry[0] === 'C') index += 1;
+    }
+    return count;
+  } catch {
+    return undefined;
+  }
+}
+
+/**
+ * Current branch, upstream sync and number of changed files of the repository
+ * containing `path`. Lighter than `getGitStatus` (no ignored files, no per-file
+ * details) so the status bar can call it on every workspace change.
  */
 export async function getGitBranch(path: string): Promise<GitBranchResult> {
   try {
@@ -93,12 +116,16 @@ export async function getGitBranch(path: string): Promise<GitBranchResult> {
   } catch {
     return { isGitRepo: false };
   }
+  const [branch, changedFiles] = await Promise.all([readBranch(path), countChangedFiles(path)]);
+  return { isGitRepo: true, branch, changedFiles };
+}
 
+async function readBranch(path: string): Promise<GitBranchInfo> {
   let ref: string;
   try {
     ref = await gitExec(['symbolic-ref', '-q', 'HEAD'], path);
   } catch {
-    return { isGitRepo: true, branch: { ahead: 0, behind: 0 } }; // detached HEAD
+    return { ahead: 0, behind: 0 }; // detached HEAD
   }
 
   const branch: GitBranchInfo = { name: ref.replace(/^refs\/heads\//, ''), ahead: 0, behind: 0 };
@@ -107,11 +134,11 @@ export async function getGitBranch(path: string): Promise<GitBranchResult> {
     const [upstream, track] = (
       await gitExec(['for-each-ref', '--format=%(upstream:short)%00%(upstream:track,nobracket)', ref], path)
     ).split('\0');
-    if (upstream) return { isGitRepo: true, branch: { ...branch, upstream, ...parseTrack(track) } };
+    if (upstream) return { ...branch, upstream, ...parseTrack(track) };
   } catch {
     // Keep the branch name even if tracking info is unavailable.
   }
-  return { isGitRepo: true, branch };
+  return branch;
 }
 
 function parseGitStatus(output: string, gitRootPath: string): Omit<GitStatusContext, 'rootPath'> {

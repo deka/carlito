@@ -9,6 +9,8 @@ interface CarloAppState {
   lastWorkspacePath?: string;
   /** Most recent first, deduplicated, capped at {@link maxRecentWorkspaces}. */
   recentWorkspaces?: string[];
+  /** tsserver.js files of workspaces the user allowed to run (see lsp/workspaceTypeScript). */
+  trustedTsserverPaths?: string[];
 }
 
 const maxRecentWorkspaces = 10;
@@ -109,4 +111,22 @@ export function clearRecentWorkspaces(): void {
 export function onRecentWorkspacesChanged(listener: () => void): () => void {
   recentListeners.add(listener);
   return () => recentListeners.delete(listener);
+}
+
+function trustedTsserverPaths(): string[] {
+  const value = loadAppState().trustedTsserverPaths;
+  return Array.isArray(value) ? value.filter(isNonEmptyString) : [];
+}
+
+export function isTrustedTsserverPath(path: string): boolean {
+  return trustedTsserverPaths().includes(resolve(path));
+}
+
+/** Remember that the user allowed the workspace TypeScript at `path` to run. */
+export function trustTsserverPath(path: string): void {
+  const normalized = resolve(path);
+  const current = trustedTsserverPaths();
+  if (current.includes(normalized)) return;
+  cachedState = { ...loadAppState(), trustedTsserverPaths: [...current, normalized] };
+  saveAppState();
 }

@@ -336,10 +336,10 @@ button:focus-visible,
 }
 .sidebar-resizer:hover,
 .sidebar-resizer:active { background: var(--accent); }
-.file-tree,
+.sidebar,
 .sidebar-resizer,
 .main-area { grid-row: 1; }
-.file-tree { grid-column: 2; }
+.sidebar { grid-column: 2; }
 .sidebar-resizer { grid-column: 3; }
 .main-area {
   grid-column: 4;

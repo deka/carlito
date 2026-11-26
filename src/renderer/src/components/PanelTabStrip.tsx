@@ -2,8 +2,6 @@ import { type BottomPanelId } from '../store/useBottomPanelStore';
 
 const panelLabels: Record<BottomPanelId, string> = {
   problems: 'Problems',
-  search: 'Search',
-  git: 'Source Control',
 };
 
 interface PanelTabStripProps {

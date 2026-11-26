@@ -36,6 +36,7 @@ export const IPC = {
   workspaceCurrentFolder: 'workspace:currentFolder',
   workspaceListTree: 'workspace:listTree',
   workspaceSearch: 'workspace:search',
+  workspaceReplace: 'workspace:replace',
   workspaceChanged: 'workspace:changed',
   workspaceRecentList: 'workspace:recentList',
   workspaceRecentOpen: 'workspace:recentOpen',

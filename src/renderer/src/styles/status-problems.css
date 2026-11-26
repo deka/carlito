@@ -69,6 +69,7 @@
 }
 .status-git-branch-name { min-width: 0; overflow: hidden; text-overflow: ellipsis; }
 .status-git-branch-sync { flex: 0 0 auto; color: var(--muted); }
+.status-git-branch-changes { flex: 0 0 auto; color: var(--git-modified); }
 .status-spacer { flex: 1; }
 .status-language {
   padding: 2px 7px;

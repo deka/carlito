@@ -12,6 +12,14 @@ export async function openSearchResult(result: WorkspaceSearchMatch): Promise<vo
   await openFileByPath(result.path, result.uri);
   requestAnimationFrame(() => {
     const editor = getEditor();
-    if (editor?.getModel()?.uri.toString() === result.uri) revealPosition(editor, position);
+    if (editor?.getModel()?.uri.toString() !== result.uri) return;
+    revealPosition(editor, position);
+    // Select the match, as VS Code does, so typing replaces it and Ctrl+D extends from it.
+    editor.setSelection({
+      startLineNumber: result.lineNumber,
+      startColumn: result.matchStart + 1,
+      endLineNumber: result.lineNumber,
+      endColumn: result.matchEnd + 1,
+    });
   });
 }

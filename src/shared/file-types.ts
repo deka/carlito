@@ -143,6 +143,8 @@ export interface GitBranchInfo {
 export interface GitBranchResult {
   isGitRepo: boolean;
   branch?: GitBranchInfo;
+  /** Changed files inside the workspace (staged, unstaged or untracked); undefined when unknown. */
+  changedFiles?: number;
 }
 
 export interface GitStatusResult {
@@ -171,9 +173,21 @@ export interface GitCommitRequest {
   message: string;
 }
 
-export interface WorkspaceSearchRequest {
+export interface WorkspaceSearchOptions {
+  isRegex?: boolean;
+  isCaseSensitive?: boolean;
+  isWordMatch?: boolean;
+}
+
+export interface WorkspaceSearchRequest extends WorkspaceSearchOptions {
   query: string;
   maxResults?: number;
+  /** Comma-separated globs or paths; only matching files are searched. */
+  includes?: string;
+  /** Comma-separated globs or paths to skip. */
+  excludes?: string;
+  /** Honour .gitignore files and the default excluded folders (default true). */
+  useIgnoreFiles?: boolean;
 }
 
 export interface WorkspaceSearchMatch {
@@ -189,6 +203,33 @@ export interface WorkspaceSearchMatch {
 export interface WorkspaceSearchResult {
   matches: WorkspaceSearchMatch[];
   truncated: boolean;
+  /** Set when the query could not run (invalid regex, unreadable root…). */
+  error?: string;
+}
+
+/** One replacement inside a line; offsets are UTF-16 indices into the line text (BOM excluded). */
+export interface WorkspaceReplaceEdit {
+  lineNumber: number;
+  start: number;
+  end: number;
+  /** Text expected between `start` and `end`; the edit is skipped if the file changed. */
+  expected: string;
+  replacement: string;
+}
+
+export interface WorkspaceReplaceRequest {
+  files: { path: string; edits: WorkspaceReplaceEdit[] }[];
+}
+
+export interface WorkspaceReplaceFileResult {
+  path: string;
+  applied: number;
+  skipped: number;
+  error?: string;
+}
+
+export interface WorkspaceReplaceResult {
+  files: WorkspaceReplaceFileResult[];
 }
 
 export interface WorkspaceChangedEvent {

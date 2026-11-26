@@ -1,5 +1,6 @@
 import { runCommand } from '../commands/registry';
-import { useBottomPanelStore } from '../store/useBottomPanelStore';
+import { useGitDialogStore } from '../store/useGitDialogStore';
+import { useSearchStore } from '../store/useSearchStore';
 import { useWorkbenchUiStore } from '../store/useWorkbenchUiStore';
 import { WorkspaceMenuButton } from './WorkspaceMenu';
 
@@ -42,8 +43,10 @@ const icons = {
 
 export function ActivityBar() {
   const sidebarVisible = useWorkbenchUiStore((state) => state.sidebarVisible);
-  const toggleSidebar = useWorkbenchUiStore((state) => state.toggleSidebar);
-  const activePanel = useBottomPanelStore((state) => state.activePanel);
+  const sidebarView = useWorkbenchUiStore((state) => state.sidebarView);
+  const explorerActive = sidebarVisible && sidebarView === 'explorer';
+  const searchActive = sidebarVisible && sidebarView === 'search';
+  const gitDialogOpen = useGitDialogStore((state) => state.isOpen);
 
   return (
     <nav className="activity-bar" aria-label="Activity Bar">
@@ -58,32 +61,35 @@ export function ActivityBar() {
           {icons.quickOpen}
         </button>
         <button
-          className={`activity-bar-button ${sidebarVisible ? 'active' : ''}`}
+          className={`activity-bar-button ${explorerActive ? 'active' : ''}`}
           type="button"
-          onClick={toggleSidebar}
+          onClick={() => useWorkbenchUiStore.getState().toggleSidebarView('explorer')}
           title="Explorer (Ctrl+Shift+E)"
           aria-label="Toggle Explorer"
-          aria-pressed={sidebarVisible}
+          aria-pressed={explorerActive}
         >
           {icons.explorer}
         </button>
         <button
-          className={`activity-bar-button ${activePanel === 'search' ? 'active' : ''}`}
+          className={`activity-bar-button ${searchActive ? 'active' : ''}`}
           type="button"
-          onClick={() => void runCommand('workbench.action.findInFiles')}
+          onClick={() => {
+            useWorkbenchUiStore.getState().toggleSidebarView('search');
+            if (!searchActive) useSearchStore.getState().requestFocus('query');
+          }}
           title="Search (Ctrl+Shift+F)"
-          aria-label="Search workspace"
-          aria-pressed={activePanel === 'search'}
+          aria-label="Toggle Search"
+          aria-pressed={searchActive}
         >
           {icons.search}
         </button>
         <button
-          className={`activity-bar-button ${activePanel === 'git' ? 'active' : ''}`}
+          className={`activity-bar-button ${gitDialogOpen ? 'active' : ''}`}
           type="button"
           onClick={() => void runCommand('workbench.panel.git.toggle')}
           title="Source Control (Ctrl+Shift+G)"
           aria-label="Toggle Source Control"
-          aria-pressed={activePanel === 'git'}
+          aria-pressed={gitDialogOpen}
         >
           {icons.branch}
         </button>
