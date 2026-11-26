@@ -92,7 +92,8 @@ async function repositoryFilterOverrides(cwd: string): Promise<Array<[string, st
     const scope = fields[index]!;
     const key = fields[index + 1]!.split('\n', 1)[0]!;
     const lastDot = key.lastIndexOf('.');
-    if (TRUSTED_SCOPES.has(scope) || lastDot <= 'filter.'.length) continue;
+    // `filter..clean` is valid: a driver may be named with the empty string.
+    if (TRUSTED_SCOPES.has(scope) || lastDot < 'filter.'.length) continue;
     names.add(key.slice('filter.'.length, lastDot));
   }
   return [...names].flatMap((name): Array<[string, string]> => [
@@ -119,10 +120,21 @@ export async function gitExecRaw(args: string[], cwd: string): Promise<string> {
   const filters = FILTER_FREE_COMMANDS.has(args[0] ?? '')
     ? []
     : await repositoryFilterOverrides(cwd);
-  const { stdout } = await execFileAsync('git', args, {
+  // A populated submodule has its own config (filters included) that the
+  // overrides above do not cover, and checking whether its work tree is dirty
+  // runs `git status` inside it. Commits recorded for submodules still show.
+  const safeArgs =
+    args[0] === 'status' ? ['status', '--ignore-submodules=dirty', ...args.slice(1)] : args;
+  const { stdout } = await execFileAsync('git', safeArgs, {
     cwd,
     maxBuffer: MAX_BUFFER,
-    env: configEnv([...READ_ONLY_CONFIG, ...filters], { GIT_OPTIONAL_LOCKS: '0' }),
+    // No optional index writes (and so no hooks they would trigger), and no
+    // on-demand fetch of missing objects in a partial clone, which would run
+    // the repository's remote.<name>.uploadpack or a transport command.
+    env: configEnv([...READ_ONLY_CONFIG, ...filters], {
+      GIT_OPTIONAL_LOCKS: '0',
+      GIT_NO_LAZY_FETCH: '1',
+    }),
   });
   return stdout;
 }
