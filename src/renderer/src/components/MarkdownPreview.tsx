@@ -130,7 +130,8 @@ export function MarkdownPreview({ groupId, onShowSource }: Props) {
           className="markdown-preview-content"
           dangerouslySetInnerHTML={{ __html: html }}
           onClick={(event) => {
-            const anchor = (event.target as Element).closest('a');
+            // <area> (image maps) is a hyperlink too; let none navigate the window.
+            const anchor = (event.target as Element).closest('a, area');
             if (!anchor) return;
             event.preventDefault();
             const href = anchor.getAttribute('href');
