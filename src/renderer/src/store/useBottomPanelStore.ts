@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 
-export type BottomPanelId = 'problems' | 'search';
+export type BottomPanelId = 'problems';
 
 interface BottomPanelState {
   activePanel: BottomPanelId | null;

@@ -84,5 +84,4 @@
 .bottom-panel-close:hover { background: var(--hover); color: var(--fg); }
 .bottom-panel-close svg { width: 14px; height: 14px; fill: none; stroke: currentColor; stroke-linecap: round; stroke-width: 1.5; }
 .bottom-panel-content { min-width: 0; min-height: 0; overflow: hidden; }
-.bottom-panel-content .problems-close,
-.bottom-panel-content .search-close { display: none; }
+.bottom-panel-content .problems-close { display: none; }

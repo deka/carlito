@@ -14,7 +14,7 @@ import {
 } from './file-operations';
 import { rememberWorkspace } from '../config/app-state';
 import { getGitStatusContext } from './git-status';
-import { searchWorkspace } from './workspace-search';
+import { replaceInFile, searchWorkspace } from './workspace-search';
 import {
   authorizeWindowPath,
   ensureWorkspaceWatcher,
@@ -36,6 +36,9 @@ import type {
   ReadPdfResult,
   SaveAsDialogRequest,
   SaveFileRequest,
+  WorkspaceReplaceFileResult,
+  WorkspaceReplaceRequest,
+  WorkspaceReplaceResult,
   WorkspaceSearchRequest,
 } from '@shared/file-types';
 
@@ -312,4 +315,26 @@ export function registerFileHandlers(): void {
     const rootPath = await authorizeWindowPath(win, workspaceRootFor(win));
     return searchWorkspace(rootPath, request);
   });
+
+  ipcMain.handle(
+    IPC.workspaceReplace,
+    async (event, request: WorkspaceReplaceRequest): Promise<WorkspaceReplaceResult> => {
+      const win = windowFromEvent(event);
+      const files: WorkspaceReplaceFileResult[] = [];
+      for (const file of request.files) {
+        try {
+          const authorizedPath = await authorizeWindowPath(win, file.path);
+          files.push(await replaceInFile(authorizedPath, file.edits));
+        } catch (error) {
+          files.push({
+            path: file.path,
+            applied: 0,
+            skipped: file.edits.length,
+            error: error instanceof Error ? error.message : String(error),
+          });
+        }
+      }
+      return { files };
+    },
+  );
 }

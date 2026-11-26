@@ -26,6 +26,8 @@ import type {
   SaveFileRequest,
   WorkspaceChangedEvent,
   WorkspaceFolderResult,
+  WorkspaceReplaceRequest,
+  WorkspaceReplaceResult,
   WorkspaceSearchRequest,
   WorkspaceSearchResult,
 } from '@shared/file-types';
@@ -150,6 +152,8 @@ export const api = Object.freeze({
       }>,
     search: (request: WorkspaceSearchRequest) =>
       ipcRenderer.invoke(IPC.workspaceSearch, request) as Promise<WorkspaceSearchResult>,
+    replace: (request: WorkspaceReplaceRequest) =>
+      ipcRenderer.invoke(IPC.workspaceReplace, request) as Promise<WorkspaceReplaceResult>,
     onChanged: (cb: (event: WorkspaceChangedEvent) => void) =>
       on<WorkspaceChangedEvent>(IPC.workspaceChanged, cb),
     recent: {
