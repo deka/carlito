@@ -1,17 +1,17 @@
 import { useCallback, useState } from 'react';
 import { runCommand } from '../commands/registry';
 import { useContextMenuDismiss } from '../hooks/useContextMenuDismiss';
-import { useMenuPosition } from '../hooks/useMenuPosition';
 import { useRecentWorkspaces } from '../hooks/useRecentWorkspaces';
 import { useEditorStore } from '../store/useEditorStore';
 import { openRecentWorkspace } from '../utils/recentWorkspaces';
 
 const maxRecentShown = 8;
+const viewportMargin = 4;
 
 /** Activity bar button (bottom) opening the workspace menu: command palette, folders, recents, settings. */
 export function WorkspaceMenuButton() {
   const workspaceName = useEditorStore((state) => state.workspace?.name);
-  const [anchor, setAnchor] = useState<{ x: number; y: number } | null>(null);
+  const [anchor, setAnchor] = useState<{ left: number; bottom: number } | null>(null);
   const close = useCallback(() => setAnchor(null), []);
   useContextMenuDismiss(anchor !== null, close);
 
@@ -27,7 +27,7 @@ export function WorkspaceMenuButton() {
             return;
           }
           const rect = event.currentTarget.getBoundingClientRect();
-          setAnchor({ x: rect.right + 6, y: rect.bottom });
+          setAnchor({ left: rect.right + 6, bottom: Math.max(viewportMargin, window.innerHeight - rect.bottom) });
         }}
         title={workspaceName ? `Workspace: ${workspaceName}` : 'No folder open'}
         aria-label="Workspace menu"
@@ -39,13 +39,16 @@ export function WorkspaceMenuButton() {
         </svg>
         <span className={`workspace-status ${workspaceName ? 'ready' : ''}`} aria-hidden="true" />
       </button>
-      {anchor ? <WorkspaceMenu x={anchor.x} y={anchor.y} onClose={close} /> : null}
+      {anchor ? <WorkspaceMenu left={anchor.left} bottom={anchor.bottom} onClose={close} /> : null}
     </>
   );
 }
 
-function WorkspaceMenu({ x, y, onClose }: { x: number; y: number; onClose: () => void }) {
-  const menu = useMenuPosition<HTMLDivElement>(x, y);
+/**
+ * Anchored by its bottom edge to the button's bottom, so it grows upward as the
+ * recent list loads instead of overflowing the bottom of the window.
+ */
+function WorkspaceMenu({ left, bottom, onClose }: { left: number; bottom: number; onClose: () => void }) {
   const workspace = useEditorStore((state) => state.workspace);
   const recent = useRecentWorkspaces();
   const entries = recent.filter((entry) => entry.path !== workspace?.rootPath).slice(0, maxRecentShown);
@@ -60,8 +63,7 @@ function WorkspaceMenu({ x, y, onClose }: { x: number; y: number; onClose: () =>
     <div
       className="workspace-menu"
       role="menu"
-      ref={menu.ref}
-      style={menu.style}
+      style={{ left, bottom, maxHeight: `calc(100vh - ${bottom + viewportMargin}px)` }}
       onClick={(event) => event.stopPropagation()}
       onContextMenu={(event) => event.preventDefault()}
     >
