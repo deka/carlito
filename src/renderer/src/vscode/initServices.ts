@@ -1,5 +1,6 @@
 import { initialize } from '@codingame/monaco-vscode-api';
 import { servicesInitialized } from '@codingame/monaco-vscode-api/lifecycle';
+import { IOpenerService, StandaloneServices } from '@codingame/monaco-vscode-api/services';
 import getBaseServiceOverride from '@codingame/monaco-vscode-base-service-override';
 import getConfigurationServiceOverride from '@codingame/monaco-vscode-configuration-service-override';
 import getFilesServiceOverride from '@codingame/monaco-vscode-files-service-override';
@@ -60,6 +61,18 @@ import './hcl-extension';
 import './nord-theme';
 import { configureWorkers } from './workers';
 
+// The default opener calls window.open(), which the main process denies for every
+// renderer popup. Ctrl+click on links in the editor must go through the shell instead.
+function routeExternalLinksToSystemBrowser(): void {
+  StandaloneServices.get(IOpenerService).setDefaultExternalOpener({
+    openExternal: async (href) => {
+      const result = await window.api.shell.openExternal(href);
+      if (!result.ok) console.warn(`refused to open external link: ${href}`);
+      return result.ok;
+    },
+  });
+}
+
 export function initVscodeServices(): Promise<void> {
   if (servicesInitialized) return Promise.resolve();
 
@@ -76,6 +89,7 @@ export function initVscodeServices(): Promise<void> {
         ...getKeybindingsServiceOverride(),
         ...getQuickAccessServiceOverride(),
       });
+      routeExternalLinksToSystemBrowser();
     } catch (error) {
       if (error instanceof Error && error.message === 'Services are already initialized') return;
       throw error;
