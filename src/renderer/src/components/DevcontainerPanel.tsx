@@ -5,6 +5,7 @@ const statusText = {
   none: 'No dev container',
   available: 'Local',
   starting: 'Starting…',
+  stopping: 'Stopping…',
   running: 'Running',
   error: 'Failed',
 } as const;
@@ -21,6 +22,7 @@ export function DevcontainerPanel() {
 
   const run = (action: () => Promise<void>) => () => void action().catch(console.error);
   const connected = state.status === 'running' || state.status === 'starting';
+  const busy = state.status === 'starting' || state.status === 'stopping';
 
   return (
     <section className="problems-panel devcontainer-panel" aria-label="Dev Container">
@@ -31,11 +33,11 @@ export function DevcontainerPanel() {
         </div>
         <div className="devcontainer-actions">
           {connected ? (
-            <button type="button" onClick={run(reopenLocally)}>Reopen Locally</button>
+            <button type="button" disabled={busy} onClick={run(reopenLocally)}>Reopen Locally</button>
           ) : (
-            <button type="button" onClick={run(() => reopenInContainer())}>Reopen in Container</button>
+            <button type="button" disabled={busy} onClick={run(() => reopenInContainer())}>Reopen in Container</button>
           )}
-          <button type="button" onClick={run(() => reopenInContainer(true))}>Rebuild</button>
+          <button type="button" disabled={busy} onClick={run(() => reopenInContainer(true))}>Rebuild</button>
         </div>
       </header>
       <pre className="devcontainer-log" ref={logRef}>

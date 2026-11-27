@@ -5,6 +5,8 @@ export type DevcontainerState =
   /** A devcontainer.json exists; the window runs locally. */
   | { status: 'available' }
   | { status: 'starting' }
+  /** Reopening locally: the container is being stopped. */
+  | { status: 'stopping' }
   | {
       status: 'running';
       containerId: string;

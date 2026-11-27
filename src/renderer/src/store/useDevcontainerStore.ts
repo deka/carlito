@@ -81,6 +81,11 @@ export function watchDevcontainer(): () => void {
   };
 }
 
+/** Opening in the container or reopening locally: the workbench must not be changed meanwhile. */
+export function isDevcontainerBusy(state: DevcontainerState = useDevcontainerStore.getState().state): boolean {
+  return state.status === 'starting' || state.status === 'stopping';
+}
+
 export function devcontainerAvailable(): boolean {
   return useDevcontainerStore.getState().state.status !== 'none';
 }
@@ -96,8 +101,17 @@ export async function reopenInContainer(rebuild = false): Promise<void> {
   applyState(rootPath, await window.api.devcontainer.open(rootPath, rebuild));
 }
 
+/**
+ * Stop the container and work locally again. Tabs opened in the container (files,
+ * previews, terminals) are closed first; cancelling an unsaved-changes prompt aborts.
+ */
 export async function reopenLocally(): Promise<void> {
   const rootPath = currentRoot();
-  if (!rootPath || !devcontainerAvailable()) return;
+  const { status } = useDevcontainerStore.getState().state;
+  if (!rootPath || status === 'none' || status === 'stopping') return;
+  if (status === 'running') {
+    const { closeAllTabsWithPrompt } = await import('../editor/saveActions');
+    if (!(await closeAllTabsWithPrompt())) return;
+  }
   applyState(rootPath, await window.api.devcontainer.close(rootPath));
 }

@@ -143,6 +143,44 @@ function containerName(docker: string, containerId: string): Promise<string> {
   });
 }
 
+function docker(dockerPath: string, args: string[], timeout = 15_000): Promise<string> {
+  return new Promise((done, fail) => {
+    execFile(dockerPath, args, { env: toolEnv(dockerPath), timeout }, (error, stdout, stderr) => {
+      if (error) fail(new Error(stderr.trim() || error.message));
+      else done(stdout);
+    });
+  });
+}
+
+const lines = (text: string) => text.split('\n').map((line) => line.trim()).filter(Boolean);
+
+/**
+ * Stop the workspace's dev container, found by the label the devcontainer CLI puts
+ * on it (so a container still being created is found too), and the other services
+ * of its Docker Compose project.
+ */
+async function stopContainers(rootPath: string, log: (text: string) => void): Promise<void> {
+  const dockerPath = findTool('docker');
+  if (!dockerPath) return;
+  const ids = new Set(
+    lines(await docker(dockerPath, ['ps', '-q', '--filter', `label=devcontainer.local_folder=${rootPath}`])),
+  );
+  for (const id of [...ids]) {
+    const project = (
+      await docker(dockerPath, ['inspect', '--format', '{{index .Config.Labels "com.docker.compose.project"}}', id])
+    ).trim();
+    if (!project || project === '<no value>') continue;
+    const services = await docker(dockerPath, ['ps', '-q', '--filter', `label=com.docker.compose.project=${project}`]);
+    for (const service of lines(services)) ids.add(service);
+  }
+  if (ids.size === 0) {
+    log('No running container to stop.\n');
+    return;
+  }
+  log(`$ docker stop ${[...ids].map((id) => id.slice(0, 12)).join(' ')}\n`);
+  await docker(dockerPath, ['stop', ...ids], 120_000);
+}
+
 function start(sender: WebContents, entry: WindowDevcontainer, rebuild: boolean): void {
   if (entry.state.status === 'none') return;
   if (entry.proc) return;
@@ -230,22 +268,34 @@ export function registerDevcontainerHandlers(): void {
 
   ipcMain.handle(IPC.devcontainerOpen, (event, request: DevcontainerOpenRequest): DevcontainerState => {
     const entry = entryFor(event.sender, checkedRoot(event.sender, request?.rootPath));
+    if (entry.state.status === 'stopping') return entry.state;
     if (request.rebuild) cancel(entry);
     if (request.rebuild || entry.state.status !== 'running') start(event.sender, entry, request.rebuild === true);
     return entry.state;
   });
 
-  ipcMain.handle(IPC.devcontainerClose, (event, request: DevcontainerStateRequest): DevcontainerState => {
-    const entry = entryFor(event.sender, checkedRoot(event.sender, request?.rootPath));
-    cancel(entry);
-    setDevcontainerWorkspace(entry.rootPath, false);
-    // The container keeps running: starting it again is the slow part.
-    if (entry.state.status !== 'none') {
-      appendLog(event.sender, entry, 'Reopened locally; the container keeps running.\n');
-      setState(event.sender, entry, { status: 'available' });
-    }
-    return entry.state;
-  });
+  ipcMain.handle(
+    IPC.devcontainerClose,
+    async (event, request: DevcontainerStateRequest): Promise<DevcontainerState> => {
+      const sender = event.sender;
+      const entry = entryFor(sender, checkedRoot(sender, request?.rootPath));
+      if (entry.state.status === 'none' || entry.state.status === 'stopping') return entry.state;
+      cancel(entry);
+      setDevcontainerWorkspace(entry.rootPath, false);
+      setState(sender, entry, { status: 'stopping' });
+      appendLog(sender, entry, 'Reopening locally: stopping the dev container…\n');
+      try {
+        await stopContainers(entry.rootPath, (text) => appendLog(sender, entry, text));
+        appendLog(sender, entry, 'Reopened locally.\n');
+      } catch (error) {
+        appendLog(sender, entry, `Could not stop the container: ${error instanceof Error ? error.message : String(error)}\n`);
+      }
+      if (byWindow.get(sender.id) === entry && (entry.state as DevcontainerState).status === 'stopping') {
+        setState(sender, entry, { status: 'available' });
+      }
+      return entry.state;
+    },
+  );
 
   ipcMain.handle(IPC.devcontainerLog, (event, request: DevcontainerStateRequest): { log: string } => {
     const entry = byWindow.get(event.sender.id);

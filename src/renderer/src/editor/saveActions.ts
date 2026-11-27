@@ -190,6 +190,18 @@ export async function closeTabWithPrompt(
   return true;
 }
 
+/** Close every tab of every group, asking about unsaved changes. False if the user cancelled. */
+export async function closeAllTabsWithPrompt(): Promise<boolean> {
+  flushAllRichEdits();
+  for (const group of useEditorStore.getState().groups) {
+    for (const tabId of [...group.tabIds]) {
+      const tab = useEditorStore.getState().tabs.find((candidate) => candidate.id === tabId);
+      if (tab && !(await closeTabWithPrompt(tab, group.id))) return false;
+    }
+  }
+  return true;
+}
+
 export async function handleWindowCloseRequest(): Promise<void> {
   flushAllRichEdits();
   for (const tab of useEditorStore.getState().tabs.filter((candidate) => candidate.dirty)) {

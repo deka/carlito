@@ -10,6 +10,8 @@ export function DevcontainerIndicator() {
       ? state.name
       : state.status === 'starting'
         ? 'Starting Dev Container…'
+        : state.status === 'stopping'
+          ? 'Stopping Dev Container…'
         : state.status === 'error'
           ? 'Dev Container failed'
           : 'Dev Container';
