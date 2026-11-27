@@ -13,6 +13,7 @@ import { ensureVscodeServices, loadAfterVscodeServices } from './vscode/services
 import { useKeybindings } from './hooks/useKeybindings';
 import { useSidebarResize } from './hooks/useSidebarResize';
 import { useWorkspaceExternalChanges } from './hooks/useWorkspaceExternalChanges';
+import { useDevcontainerStore, watchDevcontainer } from './store/useDevcontainerStore';
 import { activeTabInGroup, useActiveTab, useEditorStore } from './store/useEditorStore';
 import { useSettingsStore } from './store/useSettingsStore';
 import { useThemeStore } from './store/useThemeStore';
@@ -46,11 +47,13 @@ export function App() {
   const sidebarVisible = useWorkbenchUiStore((state) => state.sidebarVisible);
   const activeGroupId = useEditorStore((state) => state.activeGroupId);
   const workspaceName = useEditorStore((state) => state.workspace?.name);
+  const inDevcontainer = useDevcontainerStore((state) => state.state.status === 'running');
+  useEffect(() => watchDevcontainer(), []);
   const activeTab = useActiveTab();
   // There is no in-app title bar: the native window title carries the context.
   useEffect(() => {
     document.title = titleFromState();
-  }, [activeTab?.title, activeTab?.dirty, workspaceName, activeGroupId]);
+  }, [activeTab?.title, activeTab?.dirty, workspaceName, activeGroupId, inDevcontainer]);
   const { sidebarWidth, pointerHandlers } = useSidebarResize({
     minWidth: 210,
     maxWidth: 560,

@@ -5,6 +5,11 @@ import { navigateProblem } from '../../problems/navigation';
 import { openAdjacentSearchResult } from '../../search/navigation';
 import { useEditorStore, activeTab } from '../../store/useEditorStore';
 import { useBottomPanelStore } from '../../store/useBottomPanelStore';
+import {
+  reopenInContainer,
+  reopenLocally,
+  showDevcontainerLog,
+} from '../../store/useDevcontainerStore';
 import { useGitDialogStore } from '../../store/useGitDialogStore';
 import { useSearchStore } from '../../store/useSearchStore';
 import { useWorkbenchUiStore } from '../../store/useWorkbenchUiStore';
@@ -46,6 +51,26 @@ export function registerWorkbenchCommands(): void {
     title: 'Terminal: New Terminal',
     keybinding: 'Ctrl+Shift+T',
     run: openTerminal,
+  });
+  registerCommand({
+    id: 'devcontainer.reopenInContainer',
+    title: 'Dev Container: Reopen in Container',
+    run: () => reopenInContainer(),
+  });
+  registerCommand({
+    id: 'devcontainer.reopenLocally',
+    title: 'Dev Container: Reopen Locally',
+    run: reopenLocally,
+  });
+  registerCommand({
+    id: 'devcontainer.rebuild',
+    title: 'Dev Container: Rebuild Container',
+    run: () => reopenInContainer(true),
+  });
+  registerCommand({
+    id: 'devcontainer.showLog',
+    title: 'Dev Container: Show Log',
+    run: showDevcontainerLog,
   });
   registerCommand({
     id: 'workbench.action.findInFiles',

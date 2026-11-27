@@ -1,7 +1,9 @@
 import { type BottomPanelId } from '../store/useBottomPanelStore';
+import { useDevcontainerStore } from '../store/useDevcontainerStore';
 
 const panelLabels: Record<BottomPanelId, string> = {
   problems: 'Problems',
+  devcontainer: 'Dev Container',
 };
 
 interface PanelTabStripProps {
@@ -13,9 +15,13 @@ interface PanelTabStripProps {
 }
 
 export function PanelTabStrip({ activePanel, errorCount, warningCount, onOpen, onClose }: PanelTabStripProps) {
+  const hasDevcontainer = useDevcontainerStore((store) => store.state.status !== 'none');
+  const panels = (Object.keys(panelLabels) as BottomPanelId[]).filter(
+    (panel) => panel !== 'devcontainer' || hasDevcontainer,
+  );
   return (
     <div className="bottom-panel-tabs" role="tablist" aria-label="Panel tabs">
-      {(Object.keys(panelLabels) as BottomPanelId[]).map((panel) => (
+      {panels.map((panel) => (
         <button
           key={panel}
           className={`bottom-panel-tab ${activePanel === panel ? 'active' : ''}`}

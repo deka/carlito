@@ -238,3 +238,34 @@
 .problem-severity-hint .problem-icon {
   color: var(--accent);
 }
+
+.devcontainer-status { display: inline-flex; align-items: center; gap: 5px; }
+.devcontainer-status svg { width: 13px; height: 13px; flex: none; fill: none; stroke: currentColor; stroke-linejoin: round; stroke-width: 1.2; }
+.devcontainer-status-running { color: var(--accent-secondary); }
+.devcontainer-status-starting svg { animation: status-update-pulse 1.2s ease-in-out infinite; }
+.devcontainer-status-error { color: var(--git-deleted); }
+
+.devcontainer-actions { display: flex; gap: 6px; margin-left: auto; }
+.devcontainer-actions button {
+  border: 1px solid var(--border, transparent);
+  border-radius: 4px;
+  padding: 2px 8px;
+  background: transparent;
+  color: var(--muted-strong);
+  font: inherit;
+  font-size: 12px;
+  cursor: pointer;
+}
+.devcontainer-actions button:hover { background: var(--hover); color: var(--fg); }
+.devcontainer-log {
+  margin: 0;
+  padding: 6px 12px 10px;
+  overflow: auto;
+  color: var(--muted-strong);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', monospace;
+  font-size: 12px;
+  line-height: 1.45;
+  white-space: pre-wrap;
+  word-break: break-word;
+  user-select: text;
+}
