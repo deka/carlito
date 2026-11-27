@@ -12,6 +12,7 @@ import type {
 import { IPC } from '@shared/ipc';
 import { isDevcontainerWorkspace, setDevcontainerWorkspace } from '../config/app-state';
 import { workspaceRootFor } from '../ipc/workspace-state';
+import { startGpgForwarding, type GpgForwarding } from './gpg-forward';
 import { findTool, toolEnv } from './tools';
 
 /** A running dev container that processes of a window can be started in. */
@@ -32,6 +33,8 @@ interface WindowDevcontainer {
   log: string;
   /** The running `devcontainer up`, if any. */
   proc?: ChildProcess;
+  /** Host GnuPG agent forwarded into the running container. */
+  gpg?: GpgForwarding;
 }
 
 const maxLogLength = 512 * 1024;
@@ -53,7 +56,11 @@ function sendTo(sender: WebContents, channel: string, payload: unknown): void {
 
 function setState(sender: WebContents, entry: WindowDevcontainer, state: DevcontainerState): void {
   entry.state = state;
-  if (state.status !== 'running') entry.target = undefined;
+  if (state.status !== 'running') {
+    entry.target = undefined;
+    entry.gpg?.stop();
+    entry.gpg = undefined;
+  }
   sendTo(sender, IPC.devcontainerChanged, {
     rootPath: entry.rootPath,
     state,
@@ -71,6 +78,8 @@ function appendLog(sender: WebContents, entry: WindowDevcontainer, data: string,
 }
 
 function cancel(entry: WindowDevcontainer): void {
+  entry.gpg?.stop();
+  entry.gpg = undefined;
   const proc = entry.proc;
   entry.proc = undefined;
   if (proc && proc.exitCode === null) proc.kill();
@@ -234,6 +243,7 @@ function start(sender: WebContents, entry: WindowDevcontainer, rebuild: boolean)
       setDevcontainerWorkspace(entry.rootPath, true);
       appendLog(sender, entry, `Connected to ${name} (${remoteWorkspaceFolder}).\n`);
       setState(sender, entry, { status: 'running', containerId, name, remoteUser, remoteWorkspaceFolder });
+      entry.gpg = startGpgForwarding(entry.target, (text) => appendLog(sender, entry, text));
     });
   });
 }
