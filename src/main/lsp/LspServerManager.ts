@@ -5,12 +5,14 @@ import type { Message } from 'vscode-jsonrpc';
 import { IPC } from '@shared/ipc';
 import { hasLanguageServer } from '@shared/language-registry';
 import type { LspStartOptions } from '@shared/lsp-types';
-import { resolveServer } from './resolveServer';
+import type { PathMapping } from './pathMapping';
+import type { ResolvedServer } from './resolveServer';
 
 interface Connection {
   proc: ChildProcessWithoutNullStreams;
   reader: StreamMessageReader;
   writer: StreamMessageWriter;
+  mapping?: PathMapping;
 }
 
 export class LspServerManager {
@@ -18,10 +20,11 @@ export class LspServerManager {
 
   constructor(private readonly send: (channel: string, payload: unknown) => void) {}
 
-  start(opts: LspStartOptions): string {
+  /** `mapping` translates workspace paths for a server running in a dev container. */
+  start(opts: LspStartOptions, server: ResolvedServer, mapping?: PathMapping): string {
     if (!hasLanguageServer(opts.languageId))
       throw new Error(`No language server for ${opts.languageId}`);
-    const { command, args, cwd, env, debug } = resolveServer(opts.languageId, opts.rootUri);
+    const { command, args, cwd, env, debug } = server;
     const proc = spawn(command, args, { cwd, env, stdio: ['pipe', 'pipe', 'pipe'] });
     const reader = new StreamMessageReader(proc.stdout);
     const writer = new StreamMessageWriter(proc.stdin);
@@ -31,7 +34,9 @@ export class LspServerManager {
     console.error(`[lsp ${opts.languageId}] start ${command} ${args.join(' ')} ${debug}`);
     log(`start ${command} ${args.join(' ')}; ${debug}`);
 
-    reader.listen((message: Message) => this.send(IPC.lspFromServer, { connectionId, message }));
+    reader.listen((message: Message) =>
+      this.send(IPC.lspFromServer, { connectionId, message: mapping ? mapping.toHost(message) : message }),
+    );
     proc.stderr.on('data', (chunk: Buffer) => {
       const data = chunk.toString();
       console.error(`[lsp ${opts.languageId}] ${data}`);
@@ -49,12 +54,14 @@ export class LspServerManager {
       this.connections.delete(connectionId);
     });
 
-    this.connections.set(connectionId, { proc, reader, writer });
+    this.connections.set(connectionId, { proc, reader, writer, mapping });
     return connectionId;
   }
 
   toServer(connectionId: string, message: Message): void {
-    void this.connections.get(connectionId)?.writer.write(message);
+    const connection = this.connections.get(connectionId);
+    if (!connection) return;
+    void connection.writer.write(connection.mapping ? connection.mapping.toContainer(message) : message);
   }
 
   stop(connectionId: string): void {
@@ -62,6 +69,9 @@ export class LspServerManager {
     if (!connection) return;
     connection.reader.dispose();
     connection.writer.dispose();
+    // Killing `docker exec` does not stop the server in the container; closing its
+    // stdin does (language servers exit on EOF).
+    connection.proc.stdin.end();
     connection.proc.kill();
     this.connections.delete(connectionId);
   }

@@ -9,6 +9,8 @@ export interface LspStartOptions {
 
 export interface LspStartSuccess {
   connectionId: string;
+  /** Where the server runs, when that is worth showing (e.g. inside a dev container). */
+  location?: string;
 }
 
 export interface LspStartFailure {

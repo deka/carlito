@@ -191,7 +191,7 @@ async function startLanguageClient(
     connectionId: result.connectionId,
     client,
     status: 'running',
-    detail: `root ${rootUri}`,
+    detail: result.location ? `running ${result.location} — root ${rootUri}` : `root ${rootUri}`,
     logs: [],
     disposed: false,
   });

@@ -1,4 +1,5 @@
 import { app } from 'electron';
+import { execFile } from 'node:child_process';
 import { accessSync, constants } from 'node:fs';
 import { delimiter, isAbsolute, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -96,4 +97,57 @@ export function resolveServer(languageId: ServerLanguageId, rootUri: string): Re
   }
 
   return { command: commandName, args: [...server.args], cwd, env, debug: `${debug} resolved=<system lookup>` };
+}
+
+/** Where to run language servers when the window is connected to a dev container. */
+export interface ContainerServerTarget {
+  docker: string;
+  dockerEnv: NodeJS.ProcessEnv;
+  containerId: string;
+  remoteUser: string;
+  remoteRoot: string;
+  hostRoot: string;
+}
+
+/** `sh -l` so the server is looked up (and runs) with the PATH of a login shell. */
+function containerShellArgs(target: ContainerServerTarget, script: string, argv: string[]): string[] {
+  return [
+    'exec', '-i',
+    '-u', target.remoteUser,
+    '-w', target.remoteRoot,
+    target.containerId,
+    'sh', '-lc', script,
+    ...argv,
+  ];
+}
+
+function containerHasCommand(target: ContainerServerTarget, command: string): Promise<boolean> {
+  return new Promise((done) => {
+    execFile(
+      target.docker,
+      containerShellArgs(target, 'command -v "$0" >/dev/null', [command]),
+      { env: target.dockerEnv, timeout: 15_000 },
+      (error) => done(!error),
+    );
+  });
+}
+
+/**
+ * The server for `languageId` inside the dev container, or undefined when the
+ * container does not have it installed (the caller then runs it on the host).
+ */
+export async function resolveContainerServer(
+  languageId: ServerLanguageId,
+  target: ContainerServerTarget,
+): Promise<ResolvedServer | undefined> {
+  const server = languageServerFor(languageId);
+  if (!server) throw new Error(`No language server configured for ${languageId}`);
+  if (!(await containerHasCommand(target, server.command))) return undefined;
+  return {
+    command: target.docker,
+    args: containerShellArgs(target, 'exec "$0" "$@"', [server.command, ...server.args]),
+    cwd: target.hostRoot,
+    env: target.dockerEnv,
+    debug: `command=${server.command} container=${target.containerId.slice(0, 12)} cwd=${target.remoteRoot}`,
+  };
 }
