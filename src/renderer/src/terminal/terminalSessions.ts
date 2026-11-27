@@ -85,6 +85,31 @@ function writeToClipboard(text: string): void {
   if (text) void navigator.clipboard.writeText(text).catch(console.error);
 }
 
+/** Largest OSC 52 payload accepted (base64 characters, ~750 KB of text). */
+const OSC52_MAX_PAYLOAD = 1_000_000;
+
+/**
+ * OSC 52 (`ESC ] 52 ; Pc ; Pd BEL`): programs without a display server — typically
+ * inside a dev container or over SSH — copy by sending base64 text to the terminal.
+ * xterm.js ignores the sequence on its own. Clipboard reads (`Pd` = `?`) are refused
+ * so a program in the terminal cannot read the host clipboard.
+ */
+function handleOsc52(data: string): boolean {
+  const separator = data.indexOf(';');
+  if (separator < 0) return true;
+  const payload = data.slice(separator + 1);
+  if (payload === '?' || payload.length > OSC52_MAX_PAYLOAD) return true;
+  try {
+    const bytes = Uint8Array.from(atob(payload), (char) => char.charCodeAt(0));
+    // An empty payload clears the selection; writing '' is the closest equivalent.
+    const text = new TextDecoder().decode(bytes);
+    void navigator.clipboard.writeText(text).catch(console.error);
+  } catch (error) {
+    console.error('Invalid OSC 52 payload', error);
+  }
+  return true;
+}
+
 function pasteFromClipboard(terminal: Terminal): void {
   void navigator.clipboard
     .readText()
@@ -106,6 +131,7 @@ function createSession(uri: string): TerminalSession {
   });
   const fit = new FitAddon();
   terminal.loadAddon(fit);
+  terminal.parser.registerOscHandler(52, handleOsc52);
 
   // Linux terminal conventions: Ctrl+Shift+C / Ctrl+Shift+V copy and paste.
   // Everything else (Ctrl+C, Ctrl+W, Ctrl+P, …) goes to the shell.
