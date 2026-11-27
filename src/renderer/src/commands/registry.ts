@@ -1,3 +1,5 @@
+import { isDevcontainerBusy } from '../store/useDevcontainerStore';
+
 export interface Command {
   id: string;
   title: string;
@@ -111,6 +113,8 @@ export async function ensureCommandsLoaded(): Promise<void> {
 }
 
 export async function runCommand(id: string): Promise<void> {
+  // The workbench is locked while the window switches to or from its dev container.
+  if (isDevcontainerBusy() && !id.startsWith('devcontainer.')) return;
   let command = commands.find((candidate) => candidate.id === id);
   if (!command) {
     await ensureBuiltinCommands();
