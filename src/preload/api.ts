@@ -31,6 +31,11 @@ import type {
   WorkspaceSearchRequest,
   WorkspaceSearchResult,
 } from '@shared/file-types';
+import type {
+  DevcontainerChangedEvent,
+  DevcontainerLogEvent,
+  DevcontainerState,
+} from '@shared/devcontainer-types';
 import type { LanguageConfig } from '@shared/language-registry';
 import type {
   LspFromServerPayload,
@@ -193,6 +198,22 @@ export const api = Object.freeze({
     kill: (id: string) => ipcRenderer.invoke(IPC.terminalKill, { id }) as Promise<{ ok: true }>,
     onData: (cb: (event: TerminalDataEvent) => void) => on<TerminalDataEvent>(IPC.terminalData, cb),
     onExit: (cb: (event: TerminalExitEvent) => void) => on<TerminalExitEvent>(IPC.terminalExit, cb),
+  },
+  devcontainer: {
+    /** The workspace's dev container; a workspace last used in it starts reopening. */
+    state: (rootPath: string) =>
+      ipcRenderer.invoke(IPC.devcontainerState, { rootPath }) as Promise<DevcontainerState>,
+    open: (rootPath: string, rebuild = false) =>
+      ipcRenderer.invoke(IPC.devcontainerOpen, { rootPath, rebuild }) as Promise<DevcontainerState>,
+    /** Reopen locally; the container keeps running. */
+    close: (rootPath: string) =>
+      ipcRenderer.invoke(IPC.devcontainerClose, { rootPath }) as Promise<DevcontainerState>,
+    log: (rootPath: string) =>
+      ipcRenderer.invoke(IPC.devcontainerLog, { rootPath }) as Promise<{ log: string }>,
+    onChanged: (cb: (event: DevcontainerChangedEvent) => void) =>
+      on<DevcontainerChangedEvent>(IPC.devcontainerChanged, cb),
+    onLog: (cb: (event: DevcontainerLogEvent) => void) =>
+      on<DevcontainerLogEvent>(IPC.devcontainerLogData, cb),
   },
   theme: {
     onOsChanged: (cb: (payload: { shouldUseDark: boolean }) => void) => on(IPC.themeOsChanged, cb),

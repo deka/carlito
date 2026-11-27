@@ -11,6 +11,8 @@ interface CarloAppState {
   recentWorkspaces?: string[];
   /** tsserver.js files of workspaces the user allowed to run (see lsp/workspaceTypeScript). */
   trustedTsserverPaths?: string[];
+  /** Workspaces last opened in their dev container; they reopen in it. */
+  devcontainerWorkspaces?: string[];
 }
 
 const maxRecentWorkspaces = 10;
@@ -128,5 +130,24 @@ export function trustTsserverPath(path: string): void {
   const current = trustedTsserverPaths();
   if (current.includes(normalized)) return;
   cachedState = { ...loadAppState(), trustedTsserverPaths: [...current, normalized] };
+  saveAppState();
+}
+
+function devcontainerWorkspaces(): string[] {
+  const value = loadAppState().devcontainerWorkspaces;
+  return Array.isArray(value) ? value.filter(isNonEmptyString) : [];
+}
+
+export function isDevcontainerWorkspace(path: string): boolean {
+  return devcontainerWorkspaces().includes(resolve(path));
+}
+
+/** Remember whether `path` should reopen in its dev container. */
+export function setDevcontainerWorkspace(path: string, enabled: boolean): void {
+  const normalized = resolve(path);
+  const current = devcontainerWorkspaces();
+  if (current.includes(normalized) === enabled) return;
+  const next = enabled ? [...current, normalized] : current.filter((entry) => entry !== normalized);
+  cachedState = { ...loadAppState(), devcontainerWorkspaces: next };
   saveAppState();
 }

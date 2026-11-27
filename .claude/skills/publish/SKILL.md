@@ -116,4 +116,4 @@ Termine avec :
 - les commits publiés (hash court + sujet), qui seront les lignes des release notes,
 - l'URL de la PR et son état final (mergée, ou restée ouverte avec la raison),
 - l'état de `dev` et `main` après resynchronisation,
-- un rappel que le workflow Release tourne sur `main` (Actions) et qu'ensuite `/update-carlo` installe la build.
+- un rappel que le workflow Release tourne sur `main` (Actions).

@@ -1,6 +1,7 @@
 import { useActiveTab, useEditorStore } from '../store/useEditorStore';
 import { problemCounts, useProblemsStore } from '../store/useProblemsStore';
 import { useBottomPanelStore } from '../store/useBottomPanelStore';
+import { DevcontainerIndicator } from './DevcontainerIndicator';
 import { GitBranchIndicator } from './GitBranchIndicator';
 import { LspStatusIndicator } from './LspStatusIndicator';
 import { UpdateIndicator } from './UpdateIndicator';
@@ -33,6 +34,7 @@ export function StatusBar() {
           {counts.warnings}
         </span>
       </button>
+      <DevcontainerIndicator />
       <GitBranchIndicator />
       <span className="status-spacer" />
       <UpdateIndicator />

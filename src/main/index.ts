@@ -4,6 +4,7 @@ import { loadLanguageConfig } from './config/language-config';
 import { loadUserConfig } from './config/user-config';
 import { registerCliHandlers } from './ipc/cli-handlers';
 import { registerConfigHandlers } from './ipc/config-handlers';
+import { registerDevcontainerHandlers } from './devcontainer/devcontainer-service';
 import { registerFileHandlers } from './ipc/file-handlers';
 import { registerGitHandlers } from './ipc/git-handlers';
 import { registerLspHandlers } from './ipc/lsp-handlers';
@@ -32,6 +33,7 @@ if (!gotSingleInstanceLock) {
   loadUserConfig();
   registerCliHandlers();
   registerConfigHandlers();
+  registerDevcontainerHandlers();
   registerFileHandlers();
   registerGitHandlers();
   registerLspHandlers();

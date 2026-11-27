@@ -4,6 +4,9 @@ import { useBottomPanelStore } from '../store/useBottomPanelStore';
 import { PanelTabStrip } from './PanelTabStrip';
 import { useBottomPanelResize } from '../hooks/useBottomPanelResize';
 
+const DevcontainerPanel = lazy(() =>
+  import('./DevcontainerPanel').then((module) => ({ default: module.DevcontainerPanel })),
+);
 const ProblemsPanel = lazy(() => import('./ProblemsPanel').then((module) => ({ default: module.ProblemsPanel })));
 
 export function BottomPanel() {
@@ -35,6 +38,7 @@ export function BottomPanel() {
       <div className="bottom-panel-content">
         <Suspense fallback={null}>
           {activePanel === 'problems' ? <ProblemsPanel /> : null}
+          {activePanel === 'devcontainer' ? <DevcontainerPanel /> : null}
         </Suspense>
       </div>
     </section>

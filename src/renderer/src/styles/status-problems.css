@@ -238,3 +238,86 @@
 .problem-severity-hint .problem-icon {
   color: var(--accent);
 }
+
+.devcontainer-status { display: inline-flex; align-items: center; gap: 5px; }
+.devcontainer-status svg { width: 13px; height: 13px; flex: none; fill: none; stroke: currentColor; stroke-linejoin: round; stroke-width: 1.2; }
+.devcontainer-status-running { color: var(--accent-secondary); }
+.devcontainer-status-starting svg { animation: status-update-pulse 1.2s ease-in-out infinite; }
+.devcontainer-status-error { color: var(--git-deleted); }
+
+.devcontainer-actions { display: flex; gap: 6px; margin-left: auto; }
+.devcontainer-actions button {
+  border: 1px solid var(--border, transparent);
+  border-radius: 4px;
+  padding: 2px 8px;
+  background: transparent;
+  color: var(--muted-strong);
+  font: inherit;
+  font-size: 12px;
+  cursor: pointer;
+}
+.devcontainer-actions button:hover { background: var(--hover); color: var(--fg); }
+.devcontainer-log {
+  margin: 0;
+  padding: 6px 12px 10px;
+  overflow: auto;
+  color: var(--muted-strong);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', monospace;
+  font-size: 12px;
+  line-height: 1.45;
+  white-space: pre-wrap;
+  word-break: break-word;
+  user-select: text;
+}
+
+.devcontainer-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: grid;
+  place-items: center;
+  padding: 32px;
+  background: color-mix(in srgb, var(--bg, #000) 62%, transparent);
+  backdrop-filter: blur(2px);
+}
+.devcontainer-overlay-card {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  width: min(900px, 100%);
+  height: min(560px, 100%);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--panel);
+  box-shadow: 0 18px 48px rgb(0 0 0 / 35%);
+  outline: none;
+  overflow: hidden;
+}
+.devcontainer-overlay-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--border-subtle);
+}
+.devcontainer-overlay-title { flex: 1; font-size: 13px; font-weight: 600; }
+.devcontainer-overlay-header button {
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 3px 10px;
+  background: transparent;
+  color: var(--muted-strong);
+  font: inherit;
+  font-size: 12px;
+  cursor: pointer;
+}
+.devcontainer-overlay-header button:hover { background: var(--hover); color: var(--fg); }
+.devcontainer-overlay-spinner {
+  width: 12px;
+  height: 12px;
+  border: 2px solid color-mix(in srgb, var(--accent) 30%, transparent);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation: devcontainer-spin 0.8s linear infinite;
+}
+@keyframes devcontainer-spin { to { transform: rotate(360deg); } }
+.devcontainer-overlay-log { min-height: 0; }

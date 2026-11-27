@@ -4,6 +4,7 @@
     "bgIsolation": "none"
   },
   "enabledPlugins": {
-    "claude-security@anthropic-plugin-directory": true
+    "claude-security@anthropic-plugin-directory": true,
+    "pr-review-toolkit@anthropic-plugin-directory": true
   }
 }

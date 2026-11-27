@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 
-export type BottomPanelId = 'problems';
+export type BottomPanelId = 'problems' | 'devcontainer';
 
 interface BottomPanelState {
   activePanel: BottomPanelId | null;

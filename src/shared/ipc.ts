@@ -66,6 +66,12 @@ export const IPC = {
   terminalKill: 'terminal:kill',
   terminalData: 'terminal:data',
   terminalExit: 'terminal:exit',
+  devcontainerState: 'devcontainer:state',
+  devcontainerOpen: 'devcontainer:open',
+  devcontainerClose: 'devcontainer:close',
+  devcontainerLog: 'devcontainer:log',
+  devcontainerChanged: 'devcontainer:changed',
+  devcontainerLogData: 'devcontainer:logData',
 } as const;
 
 export type IpcChannel = (typeof IPC)[keyof typeof IPC];

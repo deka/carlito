@@ -2,6 +2,7 @@ import { lazy, Suspense, useEffect, useState } from 'react';
 import { ActivityBar } from './components/ActivityBar';
 import { GitDialog } from './components/GitDialog';
 import { BottomPanel } from './components/BottomPanel';
+import { DevcontainerOverlay } from './components/DevcontainerOverlay';
 import { SettingsPanel } from './components/SettingsPanel';
 import { Sidebar } from './components/Sidebar';
 import { StatusBar } from './components/StatusBar';
@@ -13,6 +14,7 @@ import { ensureVscodeServices, loadAfterVscodeServices } from './vscode/services
 import { useKeybindings } from './hooks/useKeybindings';
 import { useSidebarResize } from './hooks/useSidebarResize';
 import { useWorkspaceExternalChanges } from './hooks/useWorkspaceExternalChanges';
+import { useDevcontainerStore, watchDevcontainer } from './store/useDevcontainerStore';
 import { activeTabInGroup, useActiveTab, useEditorStore } from './store/useEditorStore';
 import { useSettingsStore } from './store/useSettingsStore';
 import { useThemeStore } from './store/useThemeStore';
@@ -46,11 +48,13 @@ export function App() {
   const sidebarVisible = useWorkbenchUiStore((state) => state.sidebarVisible);
   const activeGroupId = useEditorStore((state) => state.activeGroupId);
   const workspaceName = useEditorStore((state) => state.workspace?.name);
+  const inDevcontainer = useDevcontainerStore((state) => state.state.status === 'running');
+  useEffect(() => watchDevcontainer(), []);
   const activeTab = useActiveTab();
   // There is no in-app title bar: the native window title carries the context.
   useEffect(() => {
     document.title = titleFromState();
-  }, [activeTab?.title, activeTab?.dirty, workspaceName, activeGroupId]);
+  }, [activeTab?.title, activeTab?.dirty, workspaceName, activeGroupId, inDevcontainer]);
   const { sidebarWidth, pointerHandlers } = useSidebarResize({
     minWidth: 210,
     maxWidth: 560,
@@ -157,6 +161,7 @@ export function App() {
         <BottomPanel />
       </div>
       <StatusBar />
+      <DevcontainerOverlay />
       <SettingsPanel />
       <GitDialog />
     </main>

@@ -3,7 +3,11 @@ import { IPC } from '@shared/ipc';
 import { languageServerFor } from '@shared/language-registry';
 import type { LspStartOptions, LspToServerPayload } from '@shared/lsp-types';
 import { isTrustedTsserverPath, trustTsserverPath } from '../config/app-state';
+import { containerTargetFor } from '../devcontainer/devcontainer-service';
+import { toolEnv } from '../devcontainer/tools';
 import { LspServerManager } from '../lsp/LspServerManager';
+import { PathMapping } from '../lsp/pathMapping';
+import { resolveContainerServer, resolveServer, type ResolvedServer } from '../lsp/resolveServer';
 import { workspaceTsserverPath } from '../lsp/workspaceTypeScript';
 
 const managers = new Map<number, LspServerManager>();
@@ -91,6 +95,30 @@ async function workspaceTypeScriptAllowed(
   return `Not running the workspace TypeScript at ${tsserverPath}: the folder was not allowed to run it.`;
 }
 
+/**
+ * Where the server for `opts` runs: in the window's dev container when it has the
+ * server installed, otherwise on the host (the workspace is mounted from the host).
+ */
+async function serverFor(
+  sender: WebContents,
+  opts: LspStartOptions,
+): Promise<{ server: ResolvedServer; mapping?: PathMapping; location?: string }> {
+  const target = containerTargetFor(sender);
+  if (target) {
+    const server = await resolveContainerServer(opts.languageId, {
+      ...target,
+      dockerEnv: toolEnv(target.docker),
+    });
+    if (server) {
+      return { server, mapping: new PathMapping(target.hostRoot, target.remoteRoot), location: 'in the dev container' };
+    }
+    const host = resolveServer(opts.languageId, opts.rootUri);
+    const location = 'on the host: not installed in the dev container';
+    return { server: { ...host, debug: `${location}; ${host.debug}` }, location };
+  }
+  return { server: resolveServer(opts.languageId, opts.rootUri) };
+}
+
 export function registerLspHandlers(): void {
   ipcMain.handle(IPC.lspStart, async (event, opts: LspStartOptions) => {
     try {
@@ -98,8 +126,9 @@ export function registerLspHandlers(): void {
         const refusal = await workspaceTypeScriptAllowed(event.sender, opts.rootUri);
         if (refusal) return { error: refusal };
       }
+      const { server, mapping, location } = await serverFor(event.sender, opts);
       if (event.sender.isDestroyed()) return { error: 'Window closed.' };
-      return { connectionId: managerFor(event.sender).start(opts) };
+      return { connectionId: managerFor(event.sender).start(opts, server, mapping), location };
     } catch (error) {
       return { error: error instanceof Error ? error.message : String(error) };
     }
