@@ -1,3 +1,5 @@
+import type { JsonSchemaAssociation } from './lsp-types';
+
 export interface LanguageServerConfig {
   command: string;
   args: string[];
@@ -6,6 +8,8 @@ export interface LanguageServerConfig {
 export interface LanguageConfig {
   languageServers: Record<string, LanguageServerConfig | null>;
   extensions: Record<string, string>;
+  /** Extra JSON schemas, on top of the SchemaStore catalog (see src/main/lsp/jsonSchemas.ts). */
+  jsonSchemas: JsonSchemaAssociation[];
 }
 
 export type LanguageId = string;
@@ -31,6 +35,7 @@ const defaultLanguageConfig: LanguageConfig = {
     '.go': 'go',
     '.rs': 'rust',
   },
+  jsonSchemas: [],
 };
 
 let languageConfig: LanguageConfig = normalizeLanguageConfig(defaultLanguageConfig);
@@ -46,7 +51,21 @@ function normalizeLanguageConfig(config: Partial<LanguageConfig>): LanguageConfi
     extensions: Object.fromEntries(
       Object.entries(config.extensions ?? {}).map(([extension, languageId]) => [extension.toLowerCase(), languageId]),
     ),
+    jsonSchemas: normalizeJsonSchemas(config.jsonSchemas),
   };
+}
+
+/** Keeps the well-formed `{ fileMatch, url }` entries of a hand-edited languages.json. */
+function normalizeJsonSchemas(value: unknown): JsonSchemaAssociation[] {
+  if (!Array.isArray(value)) return [];
+  return value.flatMap((entry: unknown) => {
+    if (!entry || typeof entry !== 'object') return [];
+    const { fileMatch, url } = entry as Partial<JsonSchemaAssociation>;
+    const patterns = typeof fileMatch === 'string' ? [fileMatch] : fileMatch;
+    if (typeof url !== 'string' || !url || !Array.isArray(patterns)) return [];
+    const valid = patterns.filter((pattern): pattern is string => typeof pattern === 'string' && pattern.length > 0);
+    return valid.length > 0 ? [{ fileMatch: valid, url }] : [];
+  });
 }
 
 export function defaultConfig(): LanguageConfig {
@@ -65,6 +84,7 @@ export function mergeLanguageConfig(base: LanguageConfig, override: Partial<Lang
   return normalizeLanguageConfig({
     languageServers: { ...base.languageServers, ...(override.languageServers ?? {}) },
     extensions: { ...base.extensions, ...(override.extensions ?? {}) },
+    jsonSchemas: override.jsonSchemas ?? base.jsonSchemas,
   });
 }
 

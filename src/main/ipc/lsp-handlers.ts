@@ -6,6 +6,7 @@ import { isTrustedTsserverPath, trustTsserverPath } from '../config/app-state';
 import { containerTargetFor } from '../devcontainer/devcontainer-service';
 import { toolEnv } from '../devcontainer/tools';
 import { LspServerManager } from '../lsp/LspServerManager';
+import { jsonSchemaAssociations } from '../lsp/jsonSchemas';
 import { PathMapping } from '../lsp/pathMapping';
 import { resolveContainerServer, resolveServer, type ResolvedServer } from '../lsp/resolveServer';
 import { workspaceTsserverPath } from '../lsp/workspaceTypeScript';
@@ -137,6 +138,7 @@ export function registerLspHandlers(): void {
     managerFor(event.sender).stop(connectionId);
     return { ok: true };
   });
+  ipcMain.handle(IPC.lspJsonSchemas, () => jsonSchemaAssociations());
   ipcMain.on(IPC.lspToServer, (event, payload: LspToServerPayload) =>
     managerFor(event.sender).toServer(payload.connectionId, payload.message),
   );

@@ -59,6 +59,7 @@ export const IPC = {
   lspServerExit: 'lsp:serverExit',
   lspServerStderr: 'lsp:serverStderr',
   lspServerLog: 'lsp:serverLog',
+  lspJsonSchemas: 'lsp:jsonSchemas',
   shellOpenExternal: 'shell:openExternal',
   terminalCreate: 'terminal:create',
   terminalWrite: 'terminal:write',
