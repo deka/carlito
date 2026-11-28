@@ -1,7 +1,7 @@
 import * as monaco from '@codingame/monaco-vscode-editor-api';
 import { MonacoLanguageClient } from 'monaco-languageclient';
 import { CloseAction, ErrorAction } from 'vscode-languageclient/browser';
-import type { LanguageId, ServerLanguageId } from '@shared/language-registry';
+import { languageServerFor, type LanguageId, type ServerLanguageId } from '@shared/language-registry';
 import type { LspStatus as LspClientStatus } from '@shared/lsp-types';
 import { serverLanguage } from './documentSelectors';
 import { IpcMessageReader, IpcMessageWriter } from './IpcMessageTransport';
@@ -205,6 +205,22 @@ async function startLanguageClient(
     emit();
     throw error;
   });
+  if (languageServerFor(lang)?.command === 'vscode-json-languageserver') void sendJsonSchemas(key, client);
+}
+
+/**
+ * vscode-json-languageserver only knows a file's schema from its `$schema` key
+ * or from associations pushed as settings; send the SchemaStore ones (see
+ * src/main/lsp/jsonSchemas.ts). Not awaited: the catalog may need a download.
+ */
+async function sendJsonSchemas(key: string, client: MonacoLanguageClient): Promise<void> {
+  try {
+    const schemas = await window.api.lsp.jsonSchemas();
+    if (clients.get(key)?.client !== client || !client.isRunning()) return;
+    await client.sendNotification('workspace/didChangeConfiguration', { settings: { json: { schemas } } });
+  } catch (error) {
+    console.error('Failed to send JSON schema associations', error);
+  }
 }
 
 export async function restartLanguageClient(

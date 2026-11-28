@@ -21,7 +21,7 @@ linux:
     - tar.gz
   category: Development
   maintainer: carlito
-  synopsis: A minimal Electron IDE, little brother of Carlo
+  synopsis: A focused, simple AI workspace
 deb:
   packageName: carlito
 npmRebuild: false

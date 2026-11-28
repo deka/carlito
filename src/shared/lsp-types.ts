@@ -56,3 +56,13 @@ export interface LspServerLog {
 }
 
 export type LspStatus = 'stopped' | 'starting' | 'running' | 'error';
+
+/**
+ * A JSON schema for the files matching `fileMatch` (globs such as
+ * `**\/.claude/settings.json`), in the shape vscode-json-languageserver reads
+ * from its `json.schemas` setting.
+ */
+export interface JsonSchemaAssociation {
+  fileMatch: string[];
+  url: string;
+}

@@ -38,6 +38,7 @@ import type {
 } from '@shared/devcontainer-types';
 import type { LanguageConfig } from '@shared/language-registry';
 import type {
+  JsonSchemaAssociation,
   LspFromServerPayload,
   LspServerExit,
   LspServerLog,
@@ -188,6 +189,8 @@ export const api = Object.freeze({
     onServerStderr: (cb: (payload: LspServerStderr) => void) =>
       on<LspServerStderr>(IPC.lspServerStderr, cb),
     onServerLog: (cb: (payload: LspServerLog) => void) => on<LspServerLog>(IPC.lspServerLog, cb),
+    /** File-name → schema associations for vscode-json-languageserver. */
+    jsonSchemas: () => ipcRenderer.invoke(IPC.lspJsonSchemas) as Promise<JsonSchemaAssociation[]>,
   },
   terminal: {
     create: (request: TerminalCreateRequest) =>
