@@ -10,7 +10,6 @@ import {
   reopenLocally,
   showDevcontainerLog,
 } from '../../store/useDevcontainerStore';
-import { useGitDialogStore } from '../../store/useGitDialogStore';
 import { useSearchStore } from '../../store/useSearchStore';
 import { useWorkbenchUiStore } from '../../store/useWorkbenchUiStore';
 import { openTerminal } from '../../terminal/terminalTabs';
@@ -112,7 +111,7 @@ export function registerWorkbenchCommands(): void {
     id: 'workbench.panel.git.toggle',
     title: 'Git: Show Source Control',
     keybinding: 'Ctrl+Shift+G',
-    run: () => useGitDialogStore.getState().toggleGitDialog(),
+    run: () => useWorkbenchUiStore.getState().toggleSidebarView('git'),
   });
   registerCommand({
     id: 'editor.action.marker.next',

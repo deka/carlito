@@ -1,5 +1,4 @@
 import { runCommand } from '../commands/registry';
-import { useGitDialogStore } from '../store/useGitDialogStore';
 import { useSearchStore } from '../store/useSearchStore';
 import { useWorkbenchUiStore } from '../store/useWorkbenchUiStore';
 import { WorkspaceMenuButton } from './WorkspaceMenu';
@@ -46,7 +45,7 @@ export function ActivityBar() {
   const sidebarView = useWorkbenchUiStore((state) => state.sidebarView);
   const explorerActive = sidebarVisible && sidebarView === 'explorer';
   const searchActive = sidebarVisible && sidebarView === 'search';
-  const gitDialogOpen = useGitDialogStore((state) => state.isOpen);
+  const gitActive = sidebarVisible && sidebarView === 'git';
 
   return (
     <nav className="activity-bar" aria-label="Activity Bar">
@@ -84,12 +83,12 @@ export function ActivityBar() {
           {icons.search}
         </button>
         <button
-          className={`activity-bar-button ${gitDialogOpen ? 'active' : ''}`}
+          className={`activity-bar-button ${gitActive ? 'active' : ''}`}
           type="button"
           onClick={() => void runCommand('workbench.panel.git.toggle')}
           title="Source Control (Ctrl+Shift+G)"
           aria-label="Toggle Source Control"
-          aria-pressed={gitDialogOpen}
+          aria-pressed={gitActive}
         >
           {icons.branch}
         </button>
