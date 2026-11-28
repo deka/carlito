@@ -128,6 +128,20 @@ function createSession(uri: string): TerminalSession {
     fontSize: 13,
     scrollback: 10_000,
     theme: currentTheme(),
+    // xterm's default OSC 8 handler confirms then calls window.open(), which the main
+    // process denies for every renderer popup. Route hyperlinks to the system browser.
+    // The confirmation stays: an OSC 8 link's visible text can differ from its target.
+    linkHandler: {
+      activate: (_event, uri) => {
+        if (!window.confirm(`Open this link in your browser?\n\n${uri}`)) return;
+        void window.api.shell
+          .openExternal(uri)
+          .then((result) => {
+            if (!result.ok) console.warn(`refused to open terminal link: ${uri}`);
+          })
+          .catch(console.error);
+      },
+    },
   });
   const fit = new FitAddon();
   terminal.loadAddon(fit);
