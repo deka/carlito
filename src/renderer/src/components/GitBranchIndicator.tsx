@@ -3,7 +3,7 @@ import { branchDisplayName, branchSyncLabel, branchTitle } from '../git/gitBranc
 import { useWorkspaceChangeDebounce } from '../hooks/useWorkspaceChangeDebounce';
 import { useEditorStore } from '../store/useEditorStore';
 import { useGitBranchStore } from '../store/useGitBranchStore';
-import { useGitDialogStore } from '../store/useGitDialogStore';
+import { useWorkbenchUiStore } from '../store/useWorkbenchUiStore';
 import { GitBranchIcon } from './GitBranchIcon';
 
 /** Keeps the branch store in step with the workspace: on open, on file/.git changes and on window focus. */
@@ -44,7 +44,7 @@ export function GitBranchIndicator() {
     <button
       className="status-item status-button status-git-branch"
       type="button"
-      onClick={() => useGitDialogStore.getState().toggleGitDialog()}
+      onClick={() => useWorkbenchUiStore.getState().toggleSidebarView('git')}
       title={`${branchTitle(branch)}${changesTitle} — Source Control (Ctrl+Shift+G)`}
     >
       <GitBranchIcon />

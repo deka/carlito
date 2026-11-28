@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 
-export type SidebarView = 'explorer' | 'search';
+export type SidebarView = 'explorer' | 'search' | 'git';
 
 interface WorkbenchUiState {
   sidebarVisible: boolean;

@@ -1,6 +1,5 @@
 import { lazy, Suspense, useEffect, useState } from 'react';
 import { ActivityBar } from './components/ActivityBar';
-import { GitDialog } from './components/GitDialog';
 import { BottomPanel } from './components/BottomPanel';
 import { DevcontainerOverlay } from './components/DevcontainerOverlay';
 import { SettingsPanel } from './components/SettingsPanel';
@@ -163,7 +162,6 @@ export function App() {
       <StatusBar />
       <DevcontainerOverlay />
       <SettingsPanel />
-      <GitDialog />
     </main>
   );
 }

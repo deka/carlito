@@ -30,8 +30,8 @@ interface GitPanelState {
 
 const initialState: GitPanelState = { files: [], isGitRepo: false, hasFetched: false, error: null };
 
-// Last known status per workspace root. The panel is unmounted whenever the
-// dialog closes, so this lets it reappear with the previous list instead of
+// Last known status per workspace root. The panel is unmounted whenever another
+// sidebar view is shown, so this lets it reappear with the previous list instead of
 // flashing "Loading changes…" while git status runs again.
 const lastStateByRoot = new Map<string, GitPanelState>();
 
@@ -39,7 +39,7 @@ function cachedState(rootPath: string | undefined): GitPanelState {
   return (rootPath && lastStateByRoot.get(rootPath)) || initialState;
 }
 
-// Draft commit message per workspace root, kept across dialog closes.
+// Draft commit message per workspace root, kept across remounts.
 const draftMessageByRoot = new Map<string, string>();
 
 function sameFiles(a: GitChangedFile[], b: GitChangedFile[]): boolean {
@@ -106,16 +106,20 @@ function GitSection({ title, section, files, disabled, onAction, onOpen }: GitSe
   );
 }
 
-export function GitPanel({ onClose }: { onClose: () => void }) {
+const headerIcons = {
+  pull: (
+    <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 2.5v8M4.5 7 8 10.5 11.5 7M3 13.5h10" /></svg>
+  ),
+  push: (
+    <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 13.5v-8M4.5 9 8 5.5 11.5 9M3 2.5h10" /></svg>
+  ),
+};
+
+const openFile = (file: GitChangedFile) => openGitChanges(file.path);
+
+/** Source Control sidebar view: changed files as a folder tree, stage/unstage, commit, pull and push. */
+export function GitPanel() {
   const rootPath = useEditorStore((state) => state.workspace?.rootPath);
-  // The diff opens in an editor tab behind the dialog: close it to show the diff.
-  const openFile = useCallback(
-    (file: GitChangedFile) => {
-      openGitChanges(file.path);
-      onClose();
-    },
-    [onClose],
-  );
 
   const [state, setState] = useState<GitPanelState>(() => cachedState(rootPath));
   const [busy, setBusy] = useState<GitBusyAction | null>(null);
@@ -266,39 +270,46 @@ export function GitPanel({ onClose }: { onClose: () => void }) {
   const loading = Boolean(rootPath) && !hasFetched;
 
   return (
-    <section className="git-panel" aria-label="Git changes">
-      <header className="git-panel-header">
-        <div className="git-panel-title">Source Control</div>
-        {isGitRepo && branch ? <GitBranchLabel branch={branch} /> : null}
-        <div className="git-panel-summary">
-          {files.length} changed file{files.length === 1 ? '' : 's'}
-          {[...counts.entries()].map(([status, count]) => (
-            <span className={`git-panel-count git-${status}`} key={status}>{statusLabels[status]} {count}</span>
-          ))}
+    <aside className="git-panel" aria-label="Source Control">
+      <div className="file-tree-header">
+        <div className="file-tree-heading">
+          <span className="file-tree-eyebrow">Source Control</span>
         </div>
-        <button
-          className="git-panel-pull"
-          type="button"
-          onClick={() => void pull()}
-          disabled={!rootPath || !isGitRepo || Boolean(busy)}
-          title="Pull from upstream (fast-forward only)"
-        >
-          {busy === 'pull' ? 'Pulling…' : 'Pull'}
-        </button>
-        <button
-          className="git-panel-push"
-          type="button"
-          onClick={() => void push()}
-          disabled={!rootPath || !isGitRepo || Boolean(busy)}
-          title="Push the current branch to its upstream"
-        >
-          {busy === 'push' ? 'Pushing…' : 'Push'}
-        </button>
-        <button className="git-panel-close" type="button" onClick={onClose} title="Close (Escape)" aria-label="Close Source Control">
-          <svg viewBox="0 0 16 16" aria-hidden="true"><path d="m5 5 6 6M11 5l-6 6" /></svg>
-        </button>
-      </header>
+        <div className="file-tree-header-actions">
+          <button
+            className={busy === 'pull' ? 'busy' : undefined}
+            type="button"
+            onClick={() => void pull()}
+            disabled={!rootPath || !isGitRepo || Boolean(busy)}
+            title={busy === 'pull' ? 'Pulling…' : 'Pull from upstream (fast-forward only)'}
+            aria-label="Pull"
+          >
+            {headerIcons.pull}
+          </button>
+          <button
+            className={busy === 'push' ? 'busy' : undefined}
+            type="button"
+            onClick={() => void push()}
+            disabled={!rootPath || !isGitRepo || Boolean(busy)}
+            title={busy === 'push' ? 'Pushing…' : 'Push the current branch to its upstream'}
+            aria-label="Push"
+          >
+            {headerIcons.push}
+          </button>
+        </div>
+      </div>
       <div className="git-panel-body">
+        {rootPath && hasFetched && !error && isGitRepo ? (
+          <div className="git-panel-overview">
+            {branch ? <GitBranchLabel branch={branch} /> : null}
+            <div className="git-panel-summary">
+              {files.length} changed file{files.length === 1 ? '' : 's'}
+              {[...counts.entries()].map(([status, count]) => (
+                <span className={`git-panel-count git-${status}`} key={status}>{statusLabels[status]} {count}</span>
+              ))}
+            </div>
+          </div>
+        ) : null}
         {rootPath && hasFetched && !error && isGitRepo ? (
           <div className="git-panel-commit">
             <textarea
@@ -306,7 +317,7 @@ export function GitPanel({ onClose }: { onClose: () => void }) {
               value={draft}
               placeholder="Commit message (Ctrl+Enter to commit)"
               aria-label="Commit message"
-              rows={2}
+              rows={3}
               spellCheck={false}
               onChange={(event) => setDraft(event.target.value)}
               onKeyDown={(event) => {
@@ -363,6 +374,6 @@ export function GitPanel({ onClose }: { onClose: () => void }) {
           />
         ) : null}
       </div>
-    </section>
+    </aside>
   );
 }
