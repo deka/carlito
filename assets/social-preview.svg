@@ -80,8 +80,8 @@
   </g>
   </g></svg></g>
 <rect width="1280" height="640" fill="url(#scrim)"/>
-<g filter="url(#ts)"><text x="80" y="234" text-anchor="start" font-size="20" font-weight="700" fill="#88c0d0" letter-spacing="5">AI WORKSPACE</text>
-  <text x="80" y="340" text-anchor="start" font-size="112" font-weight="800" fill="#eceff4" letter-spacing="-2">Carlito</text>
-  <text x="80" y="400" text-anchor="start" font-size="34" font-weight="600">
-    <tspan fill="#eceff4">Everything you need, </tspan><tspan fill="#88c0d0">nothing in the way.</tspan></text></g>
+<g filter="url(#ts)"><text x="88" y="176" font-size="38" font-weight="700" fill="#88c0d0" letter-spacing="6">AI WORKSPACE</text>
+  <text x="80" y="322" font-size="150" font-weight="800" fill="#eceff4" letter-spacing="-3">Carlito</text>
+  <text x="88" y="400" font-size="50" font-weight="600" fill="#eceff4">Everything you need,</text>
+  <text x="88" y="462" font-size="50" font-weight="600" fill="#88c0d0">nothing in the way.</text></g>
 </svg>
