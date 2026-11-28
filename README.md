@@ -1,17 +1,17 @@
 # Carlito
 
-> Everything you need, nothing in the way. A focused, simple workspace for writing code.
+> Everything you need, nothing in the way. A focused, simple AI workspace.
 
 ![Carlito](./assets/carlito.svg)
 
-Carlito is a small Electron IDE for people who want the useful part of VS Code without the rest of VS Code.
+Carlito is a small AI workspace for people who want the useful part of VS Code without the rest of VS Code.
 
-It is intentionally boring: a file tree, tabs, Monaco, and Language Server Protocol support. No marketplace, no extension platform, no built-in chat, no project system, no telemetry, no side quests. Open a folder, edit files, let your language server do the smart bits.
+It is intentionally boring: a file tree, tabs, Monaco, and Language Server Protocol support. No marketplace, no extension platform, no built-in chat, no project system, no telemetry, no side quests. Open a folder, run your coding agent in the terminal, review what it changed, and let your language server do the smart bits.
 
 
 ## Why
 
-VS Code is excellent, but it is also a platform. Carlito is just an editor-shaped IDE:
+VS Code is excellent, but it is also a platform. Carlito is just a workspace:
 
 - faster to start
 - smaller in scope
@@ -19,7 +19,7 @@ VS Code is excellent, but it is also a platform. Carlito is just an editor-shape
 - no bells and whistles
 - LSP-first instead of extension-first
 
-If a feature does not help you open code, edit code, navigate code, or get LSP feedback, it probably does not belong here.
+If a feature does not help you or your agent open code, edit code, navigate code, or get LSP feedback, it probably does not belong here.
 
 ## Features
 
@@ -156,7 +156,7 @@ In a terminal, keys go to the shell (`Ctrl+C`, `Ctrl+W`, `Ctrl+P`…); only `Ctr
 
 ## Philosophy
 
-Carlito is not trying to become your operating system. It is an IDE with LSP. That's it.
+Carlito is not trying to become your operating system. It is an AI workspace: an editor, a terminal for your agent, and LSP. That's it.
 
 ## Thanks
 

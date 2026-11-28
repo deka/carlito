@@ -1,7 +1,7 @@
 {
   "name": "carlito",
   "version": "0.1.0",
-  "description": "A minimal Electron IDE, little brother of Carlo",
+  "description": "A focused, simple AI workspace",
   "license": "MIT",
   "homepage": "https://github.com/deka/carlo",
   "repository": {

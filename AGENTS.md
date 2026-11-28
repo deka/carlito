@@ -4,7 +4,7 @@ Guidance for coding agents working on Carlo.
 
 ## Project overview
 
-Carlo is a small Electron IDE. Keep it focused: file tree, tabs/splits, Monaco, LSP, basic commands/settings. Avoid features that turn it into a general platform.
+Carlito is a small Electron AI workspace. Keep it focused: file tree, tabs/splits, Monaco, LSP, basic commands/settings. Avoid features that turn it into a general platform.
 
 Main areas:
 
