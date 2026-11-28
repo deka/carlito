@@ -4,159 +4,100 @@
 
 ![Carlito](./assets/carlito.svg)
 
-Carlito is a small AI workspace for people who want the useful part of VS Code without the rest of VS Code.
+Carlito is a workspace for coding with an AI agent. Open a folder, start your agent in the built-in terminal, and watch, review and fix what it does in a real editor, with language intelligence, search and Git right next to it.
 
-It is intentionally boring: a file tree, tabs, Monaco, and Language Server Protocol support. No marketplace, no extension platform, no built-in chat, no project system, no telemetry, no side quests. Open a folder, run your coding agent in the terminal, review what it changed, and let your language server do the smart bits.
+Everything is in the box. There are no extensions to hunt for, no settings to tune before you start, no account to create. Install it, open a folder, get to work.
 
+It runs on Linux.
 
-## Why
+## What you get
 
-VS Code is excellent, but it is also a platform. Carlito is just a workspace:
+**A real editor.** The Monaco editor (the one inside VS Code), with tabs you can drag, side-by-side and stacked splits, find and replace, formatting, soft wrap, go back / go forward, and color themes. Save formats the file and organizes imports.
 
-- faster to start
-- smaller in scope
-- fewer moving parts
-- no bells and whistles
-- LSP-first instead of extension-first
+**Your agent, right there.** Terminal tabs in a resizable bottom panel, running your usual shell. Start Claude Code, Codex, Aider or any command-line agent and keep the code it touches in view.
 
-If a feature does not help you or your agent open code, edit code, navigate code, or get LSP feedback, it probably does not belong here.
+**Review what changed.** Lines changed since the last commit are marked in the editor gutter. Source Control shows every change as a folder tree: stage, unstage, commit, pull and push without leaving the window. The current branch sits in the status bar.
 
-## Features
+**Find your way around.** Quick open any file (`Ctrl+P`), run any command (`Ctrl+Shift+P`), search and replace across the whole workspace with case, whole word, regex and include / exclude filters, results grouped by folder.
 
-- Workspace file tree
-- Monaco editor
-- Tabs and editor splits, with draggable tabs
-- Quick open (`Ctrl+P`)
-- Command palette (`Ctrl+Shift+P`)
-- Save / Save As
-- Soft wrap enabled by default, with a command palette toggle
-- Go back / go forward navigation
-- Basic color theme selection
-- Git gutter baseline for changed lines
-- LSP integration over stdio, with organize imports on save
-- Configurable language-to-server mapping
-- Optional `carlito` shell command for opening folders from a terminal
-- Search in the sidebar: find and replace across the workspace, with case / whole word / regex options, include / exclude patterns, and results grouped in a folder tree
-- Source Control: see changes as a folder tree, stage, unstage, commit and pull, with the current branch in the status bar
-- Integrated terminal tabs (`Ctrl+Shift+T`) in a resizable bottom panel, with a right-click menu (copy, paste, select all, clear)
-- Markdown: switch in place between source, formatted preview and a rich editor
-- Previews for HTML, SVG, PDF and images instead of raw content
-- Recent folders on the welcome screen and in the workspace menu
-- In-app updates: Carlito installed from the `.deb` checks for new releases and updates itself
-- More room for the code: no menu bar and no title bar; commands live in the activity bar, the workspace menu and the command palette
+**Language intelligence that just works.** Completion, errors, go to definition, find references, rename and quick fixes through language servers (LSP). TypeScript, JavaScript and JSON work out of the box.
+
+**See the real thing.** Markdown switches in place between source, formatted preview and a rich editor. HTML, SVG, PDF and images open as previews, not as raw text.
+
+**Dev containers.** Folders with a dev container can be reopened inside it.
+
+**Room for the code.** No menu bar, no title bar. Commands live in the activity bar, the workspace menu and the command palette. Recent folders wait for you on the welcome screen.
+
+**Stays up to date.** Installed from the `.deb`, Carlito checks for new releases and updates itself.
+
+## What you don't get
+
+No marketplace, no extension system, no built-in chat, no project files, no telemetry. If something does not help you or your agent open, edit, navigate or review code, it does not belong here.
 
 ## Install
 
 Download the latest package from the [Releases page](https://github.com/deka/carlo/releases).
 
-### Debian / Ubuntu (recommended)
+On Debian / Ubuntu:
 
 ```sh
 sudo apt install ./carlito_<version>_amd64.deb
 ```
 
-Then start it from the applications menu, or from a terminal:
-
-```sh
-carlito            # open the current directory
-carlito ~/project  # open a folder
-```
-
-The package installs Carlito in `/opt/carlito`, adds the `carlito` command, and installs an AppArmor profile so the Chromium sandbox works on Ubuntu 24.04 and later without root.
-
-### Other Linux distributions
+On other Linux distributions:
 
 ```sh
 tar xzf carlito-<version>.tar.gz
 ./carlito-<version>/carlito
 ```
 
-On distributions that restrict unprivileged user namespaces (Ubuntu 24.04+), the tarball cannot start sandboxed: use the `.deb` there.
+## Getting started
 
-Each release ships a `SHA256SUMS` file:
-
-```sh
-sha256sum --check --ignore-missing SHA256SUMS
-```
-
-## Build from source
-
-Requirements: Node.js 24, npm, and a C/C++ toolchain for the terminal's native module (`node-pty`): `python3`, `make`, `g++` (on Debian/Ubuntu: `sudo apt install build-essential python3`).
+Start Carlito from the applications menu, or from a terminal:
 
 ```sh
-npm ci
-npm run dev       # run in development mode
-npm run package   # build dist/carlito_<version>_amd64.deb and dist/carlito-<version>.tar.gz
+carlito            # open the current directory
+carlito ~/project  # open a folder
 ```
 
-Before sending changes, run `npm run typecheck`, `npm run lint` and `npm run build`.
+Running `carlito` again opens another window in the same app; each window has its own folder.
 
-## Releasing
+Then:
 
-Releases are built by GitHub Actions ([`.github/workflows/release.yml`](.github/workflows/release.yml)). Every push to `main` typechecks, lints, builds the Linux packages, and publishes them with checksums as a GitHub release.
-
-The version is the `major.minor` from `package.json` plus a patch number one above the previous release tag (`0.1.0`, `0.1.1`, … tagged `v0.1.0`, `v0.1.1`, …). Bump `major.minor` in `package.json` to start a new series. To build packages without publishing, run the workflow manually from the Actions tab (on any branch) and download the artifact.
-
-## Language support
-
-Carlito speaks LSP. Language intelligence comes from language servers installed on your machine or bundled with the app.
-
-### Configure languages
-
-Carlito creates a language configuration file at:
-
-```text
-~/.config/carlito/languages.json
-```
-
-Open it from the command palette with:
-
-```text
-Preferences: Open Language Config
-```
-
-Example:
-
-```json
-{
-  "languageServers": {
-    "python": { "command": "pyright-langserver", "args": ["--stdio"] },
-    "plaintext": null
-  },
-  "extensions": {
-    ".py": "python",
-    ".txt": "plaintext"
-  }
-}
-```
-
-Use `null` for languages that should not start a server.
+1. `Ctrl+Shift+T` opens a terminal. Start your agent there.
+2. `Ctrl+P` jumps to a file, `Ctrl+Shift+P` finds any command.
+3. `Ctrl+Shift+G` shows what changed, ready to commit.
+4. `Ctrl+,` opens the settings: theme, fonts, tab size, format on save.
 
 ## Keyboard shortcuts
 
-| Shortcut (Linux/Windows) | Shortcut (macOS) | Action |
-| --- | --- | --- |
-| `Ctrl+Shift+P` | `Cmd+Shift+P` | Command palette |
-| `Ctrl+P` | `Cmd+P` | Quick open file |
-| `Ctrl+O` | `Cmd+O` | Open file |
-| `Ctrl+S` | `Cmd+S` | Save |
-| `Ctrl+Shift+S` | `Cmd+Shift+S` | Save as |
-| `Ctrl+W` | `Cmd+W` | Close tab |
-| `Ctrl+Shift+T` | `Cmd+Shift+T` | New terminal |
-| `Ctrl+Space` | `Cmd+Space` | Trigger suggestions |
-| `Ctrl+[` | `Cmd+[` | Go back |
-| `Ctrl+]` | `Cmd+]` | Go forward |
-| `Ctrl+Alt+Right` | `Cmd+Option+Right` | Split editor right |
-| `Ctrl+Alt+Down` | `Cmd+Option+Down` | Split editor down |
-| `Ctrl+=` | `Cmd+=` | Zoom in |
-| `Ctrl+-` | `Cmd+-` | Zoom out |
-| `Ctrl+0` | `Cmd+0` | Reset zoom |
+| Shortcut | Action |
+| --- | --- |
+| `Ctrl+Shift+P` | Command palette |
+| `Ctrl+P` | Quick open file |
+| `Ctrl+K` | Open folder |
+| `Ctrl+N` / `Ctrl+O` | New file / open file |
+| `Ctrl+S` / `Ctrl+Shift+S` / `Ctrl+Alt+S` | Save / save as / save all |
+| `Ctrl+W` | Close tab |
+| `Ctrl+Shift+T` | New terminal |
+| `Ctrl+Shift+E` | Toggle explorer |
+| `Ctrl+Shift+F` / `Ctrl+Shift+H` | Find / replace in files |
+| `Ctrl+Shift+G` | Source Control |
+| `Ctrl+Shift+M` | Toggle problems |
+| `F8` / `Shift+F8` | Next / previous problem |
+| `F12` / `Alt+F12` | Go to / peek definition |
+| `Shift+F12` | Find references |
+| `F2` | Rename symbol |
+| `Ctrl+.` | Quick fix |
+| `Ctrl+Space` | Trigger suggestions |
+| `Ctrl+[` / `Ctrl+]` | Go back / forward |
+| `Ctrl+Alt+Right` / `Ctrl+Alt+Down` | Split editor right / down |
+| `Ctrl+Alt+V` | Toggle preview (Markdown, SVG, HTML) |
+| `Ctrl+Shift+V` | Markdown preview to the side |
+| `Ctrl+,` | Settings |
+| `Ctrl+=` / `Ctrl+-` / `Ctrl+0` | Zoom in / out / reset |
 
-In a terminal, keys go to the shell (`Ctrl+C`, `Ctrl+W`, `Ctrl+P`…); only `Ctrl+Shift` / `Ctrl+Alt` shortcuts reach Carlito. Copy and paste with `Ctrl+Shift+C` / `Ctrl+Shift+V`.
-
-## Philosophy
-
-Carlito is not trying to become your operating system. It is an AI workspace: an editor, a terminal for your agent, and LSP. That's it.
+In a terminal, keys go to the shell (`Ctrl+C`, `Ctrl+W`, `Ctrl+P`…); only `Ctrl+Shift` / `Ctrl+Alt` shortcuts reach Carlito. Copy and paste with `Ctrl+Shift+C` / `Ctrl+Shift+V`, or right-click.
 
 ## Thanks
 
